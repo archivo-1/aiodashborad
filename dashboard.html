@@ -2,71 +2,208 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Aio Repo - Host Dashboard</title>
+  <title>Aio Repo - DirArc Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 1000px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: #020617;
+      color: #e5e7eb;
+    }
+    h1, h2, h3 { margin-bottom: 0.5rem; }
+    section {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid rgba(148,163,184,0.3);
+      background: rgba(15,23,42,0.9);
+    }
+    label { display:block; margin: .25rem 0; font-size:.85rem; }
+    input, textarea, select {
+      width: 100%;
+      padding: 0.35rem 0.5rem;
+      margin-top: 0.15rem;
+      border-radius: 4px;
+      border: 1px solid rgba(148,163,184,0.6);
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 0.85rem;
+    }
+    button {
+      margin-top:0.5rem;
+      padding:0.4rem 0.8rem;
+      border-radius:4px;
+      border:1px solid rgba(96,165,250,0.7);
+      background:#1d4ed8;
+      color:#f9fafb;
+      font-size:0.85rem;
+      cursor:pointer;
+    }
+    button.secondary {
+      background:#0f172a;
+      border-color:rgba(148,163,184,0.7);
+      margin-left:0.25rem;
+    }
+    .row { display:flex; gap:0.75rem; }
+    .row > div { flex:1; }
+    .small { font-size:0.8rem; color:#9ca3af; }
+    .error { color:#fca5a5; font-size:0.8rem; margin-top:0.25rem; }
+    .ok { color:#bbf7d0; font-size:0.8rem; margin-top:0.25rem; }
+    ul.dirarc-list { list-style:none; padding-left:0; margin-top:0.5rem; font-size:0.85rem; }
+    ul.dirarc-list li {
+      padding:0.35rem 0.5rem;
+      border-radius:4px;
+      border:1px solid transparent;
+      cursor:pointer;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+    ul.dirarc-list li:hover {
+      border-color:rgba(96,165,250,0.6);
+      background:rgba(15,23,42,0.9);
+    }
+    ul.dirarc-list li.active {
+      border-color:rgba(96,165,250,1);
+      background:rgba(30,64,175,0.3);
+    }
+    code { font-size:0.8rem; background:#020617; padding:0.1rem 0.25rem; border-radius:3px; }
+  </style>
 </head>
-<body style="font-family: system-ui; max-width: 900px; margin: 2rem auto; padding: 1rem;">
-  <h1>Aio Repo – Host Dashboard</h1>
+<body>
+  <h1>Aio Repo – DirArc Dashboard</h1>
+  <p class="small">
+    Usa este panel para crear tu <strong>DirArc</strong> (Directorio Aio Repo de Colecciones) y añadir ítems
+    que Aio Repo podrá mostrar con sus visores.
+  </p>
 
-  <section style="margin-top: 2rem; padding: 1rem; border: 1px solid #ccc;">
-    <h2>1. Crear colección</h2>
-    <label>Slug (URL): <input id="col-slug" placeholder="casa-herrera" /></label><br/>
-    <label>Título: <input id="col-title" placeholder="Casa Herrera – Presentación" /></label><br/>
-    <label>Descripción: <br/>
-      <textarea id="col-desc" rows="3" style="width:100%;"></textarea>
-    </label><br/>
-    <button id="btn-create-collection">Crear colección</button>
-
-    <div id="col-result" style="margin-top:1rem; font-size:0.9rem; color:#444;"></div>
+  <!-- Auth -->
+  <section id="auth-section">
+    <h2>1. Acceso</h2>
+    <div class="row">
+      <div>
+        <h3>Registro</h3>
+        <label>Email
+          <input id="signup-email" type="email" placeholder="usuario@ejemplo.com" />
+        </label>
+        <label>Contraseña
+          <input id="signup-password" type="password" />
+        </label>
+        <button id="btn-signup">Registrarse</button>
+        <div id="signup-result" class="small"></div>
+      </div>
+      <div>
+        <h3>Login</h3>
+        <label>Email
+          <input id="login-email" type="email" />
+        </label>
+        <label>Contraseña
+          <input id="login-password" type="password" />
+        </label>
+        <button id="btn-login">Iniciar sesión</button>
+        <button id="btn-logout" class="secondary" style="display:none;">Cerrar sesión</button>
+        <div id="login-result" class="small"></div>
+      </div>
+    </div>
   </section>
 
-  <section style="margin-top: 2rem; padding: 1rem; border: 1px solid #ccc;">
-    <h2>2. Añadir ítem a una colección</h2>
-    <p style="font-size:0.9rem;">
-      Primero pega el <strong>slug</strong> de la colección y la <strong>clave de edición</strong> (owner_secret) que recibiste al crearla.
-    </p>
-    <label>Slug colección: <input id="item-col-slug" placeholder="casa-herrera" /></label><br/>
-    <label>Owner secret: <input id="item-owner-secret" style="width: 100%;" /></label><br/><br/>
+  <!-- DirArcs -->
+  <section id="dirarc-section" style="display:none;">
+    <h2>2. Mis DirArc</h2>
+    <div class="small" id="user-info"></div>
 
-    <label>ID (para Aio Repo): <input id="item-id" placeholder="IFC_CLIENT01" /></label><br/>
-    <label>Nombre: <input id="item-nombre" placeholder="Modelo IFC Cliente" /></label><br/>
-    <label>Visor (ifc, 3dm, media, map, dxf): <input id="item-visor" placeholder="ifc" /></label><br/>
-    <label>Categoría (modelo-BIM, modelo-3d, pdf, video, etc.): <input id="item-categoria" placeholder="modelo-BIM" /></label><br/>
-    <label>Colección (texto visible en Aio Repo): <input id="item-coleccion" placeholder="Casa Herrera – Fase 2" /></label><br/>
+    <div style="margin-top:1rem;">
+      <h3>Crear nuevo DirArc</h3>
+      <label>Slug (para URL, sin espacios)
+        <input id="dirarc-slug" placeholder="casa-herrera-fase-2" />
+      </label>
+      <label>Título
+        <input id="dirarc-title" placeholder="Casa Herrera – Fase 2" />
+      </label>
+      <label>Descripción
+        <textarea id="dirarc-desc" rows="2" placeholder="Colección de archivos para este proyecto."></textarea>
+      </label>
+      <button id="btn-create-dirarc">Crear DirArc</button>
+      <div id="dirarc-create-result" class="small"></div>
+    </div>
 
-    <label>Archivo (URL Dropbox o ruta local): <input id="item-archivo" style="width:100%;" placeholder="https://www.dropbox.com/..." /></label><br/>
-    <label>Thumbnail (opcional): <input id="item-thumbnail" style="width:100%;" /></label><br/>
-    <label>Descripción (opcional):<br/>
-      <textarea id="item-descripcion" rows="3" style="width:100%;"></textarea>
-    </label><br/>
-    <label>Tamaño (texto opcional): <input id="item-tamano" /></label><br/>
+    <div style="margin-top:1.5rem;">
+      <h3>DirArc existentes</h3>
+      <p class="small">
+        Haz clic en un DirArc para seleccionarlo y luego podrás añadir ítems a ese DirArc
+        en la sección 3.
+      </p>
+      <ul id="dirarc-list" class="dirarc-list"></ul>
+      <div id="dirarc-list-result" class="small"></div>
+    </div>
+  </section>
 
-    <label>uiConfig (JSON opcional):<br/>
-      <textarea id="item-ui-config" rows="3" style="width:100%;" placeholder='{"cameraModes":["orbit"],"visualStyles":["rendered"]}'></textarea>
-    </label><br/>
+  <!-- Items -->
+  <section id="items-section" style="display:none;">
+    <h2>3. Añadir ítems al DirArc seleccionado</h2>
+    <div class="small" id="current-dirarc-label">Ningún DirArc seleccionado.</div>
 
-    <label>Lat (mapa opcional): <input id="item-lat" /></label>
-    <label>Lon: <input id="item-lon" /></label>
-    <label>Zoom: <input id="item-zoom" /></label><br/>
+    <div style="margin-top:1rem;">
+      <label>ID (para Aio Repo, debe ser único dentro de tu DirArc)
+        <input id="item-id" placeholder="IFC_CLIENT01" />
+      </label>
+      <label>Nombre
+        <input id="item-nombre" placeholder="Modelo IFC Cliente" />
+      </label>
+      <label>Visor (ifc, 3dm, media, map, dxf, etc.)
+        <input id="item-visor" placeholder="ifc" />
+      </label>
+      <label>Categoría (modelo-BIM, modelo-3d, pdf, video, etc.)
+        <input id="item-categoria" placeholder="modelo-BIM" />
+      </label>
+      <label>Colección (nombre visible dentro de Aio Repo)
+        <input id="item-coleccion" placeholder="Casa Herrera – Fase 2" />
+      </label>
+      <label>Archivo (URL de Dropbox u otra ruta accesible por HTTP)
+        <input id="item-archivo" placeholder="https://www.dropbox.com/..." />
+      </label>
+      <label>Thumbnail (opcional)
+        <input id="item-thumbnail" placeholder="https://.../thumb.png" />
+      </label>
+      <label>Descripción (opcional)
+        <textarea id="item-descripcion" rows="2"></textarea>
+      </label>
+      <label>Tamaño (texto opcional)
+        <input id="item-tamano" placeholder="2 MB" />
+      </label>
+      <label>uiConfig (JSON opcional para visores 3D/BIM)
+        <textarea id="item-ui-config" rows="3" placeholder='{"cameraModes":["orbit"],"visualStyles":["rendered"]}'></textarea>
+      </label>
 
-    <button id="btn-add-item">Añadir ítem</button>
+      <button id="btn-add-item">Añadir ítem al DirArc</button>
+      <div id="item-result" class="small"></div>
 
-    <div id="item-result" style="margin-top:1rem; font-size:0.9rem; color:#444;"></div>
+      <p class="small" style="margin-top:1rem;">
+        Endpoint global de contenido (todos tus DirArc mezclados por ahora, mientras no filtremos por usuario):
+        <br />
+        <code>https://zihojlqhxfxdjahgrbwy.functions.supabase.co/all-content-json</code>
+      </p>
+    </div>
   </section>
 
   <script type="module">
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-    // TODO: replace with your real values from Supabase Settings → API
+    // === CONFIGURAR ESTO CON TUS DATOS ===
     const SUPABASE_URL = 'https://zihojlqhxfxdjahgrbwy.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_TZeZu-g4BDlcdXOfWpUG_Q_rN-Sur8t';
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    function randomOwnerSecret() {
-      return crypto.randomUUID() + '-' + crypto.randomUUID();
-    }
+    // Estado en memoria
+    let currentUser = null;
+    let currentDirArc = null;
+    let dirarcsCache = [];
 
+    // Utilidades
     function normalizeDropboxUrl(original) {
       try {
         const url = new URL(original);
@@ -83,71 +220,227 @@
       }
     }
 
-    // 1) Crear colección
-    document.getElementById('btn-create-collection').onclick = async () => {
-      const slug = document.getElementById('col-slug').value.trim();
-      const title = document.getElementById('col-title').value.trim();
-      const description = document.getElementById('col-desc').value.trim();
-      const resultEl = document.getElementById('col-result');
+    function setAuthUI(user) {
+      const authSection = document.getElementById('auth-section');
+      const dirarcSection = document.getElementById('dirarc-section');
+      const itemsSection = document.getElementById('items-section');
+      const btnLogout = document.getElementById('btn-logout');
+      const userInfo = document.getElementById('user-info');
 
-      if (!slug || !title) {
-        resultEl.textContent = 'Slug y título son obligatorios.';
+      currentUser = user;
+
+      if (!user) {
+        authSection.style.display = '';
+        dirarcSection.style.display = 'none';
+        itemsSection.style.display = 'none';
+        btnLogout.style.display = 'none';
+        userInfo.textContent = '';
+        currentDirArc = null;
+        dirarcsCache = [];
+      } else {
+        authSection.style.display = '';
+        dirarcSection.style.display = '';
+        itemsSection.style.display = '';
+        btnLogout.style.display = '';
+        userInfo.textContent = `Usuario: ${user.email || user.id}`;
+        loadDirArcs();
+      }
+    }
+
+    async function loadSession() {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) {
+        console.warn('Error obteniendo usuario:', error.message);
+        setAuthUI(null);
+        return;
+      }
+      setAuthUI(data.user || null);
+    }
+
+    // === AUTH HANDLERS ===
+    document.getElementById('btn-signup').onclick = async () => {
+      const email = document.getElementById('signup-email').value.trim();
+      const password = document.getElementById('signup-password').value.trim();
+      const resultEl = document.getElementById('signup-result');
+
+      if (!email || !password) {
+        resultEl.textContent = 'Email y contraseña son obligatorios.';
+        resultEl.className = 'small error';
         return;
       }
 
-      const ownerSecret = randomOwnerSecret();
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        resultEl.textContent = 'Error al registrar: ' + error.message;
+        resultEl.className = 'small error';
+        return;
+      }
+      resultEl.textContent = 'Registro iniciado. Revisa tu correo si se requiere confirmación.';
+      resultEl.className = 'small ok';
+    };
+
+    document.getElementById('btn-login').onclick = async () => {
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+      const resultEl = document.getElementById('login-result');
+
+      if (!email || !password) {
+        resultEl.textContent = 'Email y contraseña son obligatorios.';
+        resultEl.className = 'small error';
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        resultEl.textContent = 'Error al iniciar sesión: ' + error.message;
+        resultEl.className = 'small error';
+        return;
+      }
+      resultEl.textContent = 'Sesión iniciada.';
+      resultEl.className = 'small ok';
+      setAuthUI(data.user);
+    };
+
+    document.getElementById('btn-logout').onclick = async () => {
+      await supabase.auth.signOut();
+      setAuthUI(null);
+      document.getElementById('login-result').textContent = 'Sesión cerrada.';
+      document.getElementById('login-result').className = 'small ok';
+    };
+
+    // === DIRARC HANDLERS ===
+    async function loadDirArcs() {
+      const listEl = document.getElementById('dirarc-list');
+      const resultEl = document.getElementById('dirarc-list-result');
+      listEl.innerHTML = '';
+      resultEl.textContent = '';
+
+      if (!currentUser) return;
 
       const { data, error } = await supabase
-        .from('collections')
+        .from('dirarcs')
+        .select('*')
+        .eq('owner_user_id', currentUser.id)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error(error);
+        resultEl.textContent = 'Error cargando DirArc: ' + error.message;
+        resultEl.className = 'small error';
+        return;
+      }
+
+      dirarcsCache = data || [];
+
+      if (!dirarcsCache.length) {
+        listEl.innerHTML = '<li class="small">No tienes ningún DirArc todavía.</li>';
+        return;
+      }
+
+      dirarcsCache.forEach(d => {
+        const li = document.createElement('li');
+        li.textContent = d.title + '  (' + d.slug + ')';
+        li.onclick = () => {
+          currentDirArc = d;
+          renderDirArcList();
+        };
+        if (currentDirArc && currentDirArc.id === d.id) {
+          li.classList.add('active');
+        }
+        listEl.appendChild(li);
+      });
+
+      renderCurrentDirArcLabel();
+    }
+
+    function renderDirArcList() {
+      const listEl = document.getElementById('dirarc-list');
+      listEl.innerHTML = '';
+
+      if (!dirarcsCache.length) {
+        listEl.innerHTML = '<li class="small">No tienes ningún DirArc todavía.</li>';
+        return;
+      }
+
+      dirarcsCache.forEach(d => {
+        const li = document.createElement('li');
+        li.textContent = d.title + '  (' + d.slug + ')';
+        li.onclick = () => {
+          currentDirArc = d;
+          renderDirArcList();
+          renderCurrentDirArcLabel();
+        };
+        if (currentDirArc && currentDirArc.id === d.id) {
+          li.classList.add('active');
+        }
+        listEl.appendChild(li);
+      });
+    }
+
+    function renderCurrentDirArcLabel() {
+      const label = document.getElementById('current-dirarc-label');
+      if (!currentDirArc) {
+        label.textContent = 'Ningún DirArc seleccionado.';
+      } else {
+        label.textContent = `DirArc activo: ${currentDirArc.title} (slug: ${currentDirArc.slug})`;
+      }
+    }
+
+    document.getElementById('btn-create-dirarc').onclick = async () => {
+      const slug = document.getElementById('dirarc-slug').value.trim();
+      const title = document.getElementById('dirarc-title').value.trim();
+      const description = document.getElementById('dirarc-desc').value.trim();
+      const resultEl = document.getElementById('dirarc-create-result');
+
+      if (!currentUser) {
+        resultEl.textContent = 'Debes iniciar sesión primero.';
+        resultEl.className = 'small error';
+        return;
+      }
+      if (!slug || !title) {
+        resultEl.textContent = 'Slug y título son obligatorios.';
+        resultEl.className = 'small error';
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('dirarcs')
         .insert({
+          owner_user_id: currentUser.id,
           slug,
           title,
           description,
-          owner_secret: ownerSecret
+          public: false
         })
         .select()
         .single();
 
       if (error) {
         console.error(error);
-        resultEl.textContent = 'Error creando colección: ' + error.message;
+        resultEl.textContent = 'Error creando DirArc: ' + error.message;
+        resultEl.className = 'small error';
         return;
       }
 
-      const viewerUrl = `https://archivo-1.github.io/aiorepo/?collection=${encodeURIComponent(slug)}`;
-      const editUrl = `https://archivo-1.github.io/aiodashboard/edit?collection=${encodeURIComponent(slug)}&key=${encodeURIComponent(ownerSecret)}`;
+      resultEl.textContent = 'DirArc creado.';
+      resultEl.className = 'small ok';
 
-      resultEl.innerHTML = `
-        <div><strong>Colección creada.</strong></div>
-        <div>Slug: <code>${slug}</code></div>
-        <div>Owner secret (guárdalo):<br/><code>${ownerSecret}</code></div>
-        <div style="margin-top:0.5rem;">URL sugerida para Aio Repo: <code>${viewerUrl}</code></div>
-        <div style="margin-top:0.5rem;">URL sugerida de edición (cuando la tengas hospedada):<br/><code>${editUrl}</code></div>
-      `;
+      document.getElementById('dirarc-slug').value = '';
+      document.getElementById('dirarc-title').value = '';
+      document.getElementById('dirarc-desc').value = '';
+
+      currentDirArc = data;
+      await loadDirArcs();
+      renderCurrentDirArcLabel();
     };
 
-    // 2) Añadir ítem
+    // === ITEM HANDLER ===
     document.getElementById('btn-add-item').onclick = async () => {
-      const slug = document.getElementById('item-col-slug').value.trim();
-      const key = document.getElementById('item-owner-secret').value.trim();
       const resultEl = document.getElementById('item-result');
 
-      if (!slug || !key) {
-        resultEl.textContent = 'Slug y owner_secret son obligatorios.';
-        return;
-      }
-
-      // Buscar colección con slug + owner_secret
-      const { data: col, error: colError } = await supabase
-        .from('collections')
-        .select('*')
-        .eq('slug', slug)
-        .eq('owner_secret', key)
-        .single();
-
-      if (colError || !col) {
-        console.error(colError);
-        resultEl.textContent = 'No se encontró colección con ese slug y owner_secret.';
+      if (!currentUser || !currentDirArc) {
+        resultEl.textContent = 'Debes iniciar sesión y seleccionar un DirArc primero.';
+        resultEl.className = 'small error';
         return;
       }
 
@@ -161,12 +454,10 @@
       const descripcion = document.getElementById('item-descripcion').value.trim();
       const tamano = document.getElementById('item-tamano').value.trim();
       const uiConfigRaw = document.getElementById('item-ui-config').value.trim();
-      const latStr = document.getElementById('item-lat').value.trim();
-      const lonStr = document.getElementById('item-lon').value.trim();
-      const zoomStr = document.getElementById('item-zoom').value.trim();
 
       if (!itemId || !nombre || !visor || !categoria || !coleccion || !archivo) {
         resultEl.textContent = 'ID, nombre, visor, categoría, colección y archivo son obligatorios.';
+        resultEl.className = 'small error';
         return;
       }
 
@@ -176,6 +467,7 @@
           uiConfig = JSON.parse(uiConfigRaw);
         } catch (e) {
           resultEl.textContent = 'uiConfig no es JSON válido.';
+          resultEl.className = 'small error';
           return;
         }
       }
@@ -183,12 +475,8 @@
       const resolvedUrl = normalizeDropboxUrl(archivo);
       const source = resolvedUrl.startsWith('http') ? 'url' : 'local';
 
-      const lat = latStr ? parseFloat(latStr) : null;
-      const lon = lonStr ? parseFloat(lonStr) : null;
-      const zoom = zoomStr ? parseInt(zoomStr, 10) : null;
-
-      const { error: insertError } = await supabase.from('items').insert({
-        collection_id: col.id,
+      const { error } = await supabase.from('items').insert({
+        dirarc_id: currentDirArc.id,
         item_id: itemId,
         nombre,
         visor,
@@ -200,20 +488,31 @@
         descripcion,
         tamano,
         thumbnail,
-        ui_config: uiConfig,
-        lat,
-        lon,
-        zoom
+        ui_config: uiConfig
       });
 
-      if (insertError) {
-        console.error(insertError);
-        resultEl.textContent = 'Error insertando ítem: ' + insertError.message;
+      if (error) {
+        console.error(error);
+        resultEl.textContent = 'Error insertando ítem: ' + error.message;
+        resultEl.className = 'small error';
         return;
       }
 
-      resultEl.textContent = 'Ítem creado correctamente.';
+      resultEl.textContent = 'Ítem creado correctamente en el DirArc.';
+      resultEl.className = 'small ok';
+
+      // limpiar algunos campos
+      document.getElementById('item-id').value = '';
+      document.getElementById('item-nombre').value = '';
+      document.getElementById('item-archivo').value = '';
+      document.getElementById('item-thumbnail').value = '';
+      document.getElementById('item-descripcion').value = '';
+      document.getElementById('item-tamano').value = '';
+      document.getElementById('item-ui-config').value = '';
     };
+
+    // Al cargar la página, intentar recuperar sesión
+    loadSession();
   </script>
 </body>
 </html>
