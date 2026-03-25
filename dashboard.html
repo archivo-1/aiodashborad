@@ -74,6 +74,11 @@
     .items-group { margin-top:0.5rem; }
     .items-group-title { font-weight:600; font-size:0.85rem; margin-top:0.5rem; }
     .items-group-item { font-size:0.8rem; margin-left:0.75rem; }
+    .inline-row { display:flex; align-items:center; gap:0.4rem; margin-top:0.35rem; }
+    .inline-row input[type="checkbox"] {
+      width:auto;
+      margin-top:0;
+    }
   </style>
 </head>
 <body>
@@ -178,10 +183,23 @@
       <label>Archivo (URL pública)
         <input id="item-archivo" placeholder="https://www.dropbox.com/..." />
         <span class="small">
-          Pega aquí el enlace compartido público de Dropbox (o cualquier URL accesible por HTTP).
-          El sistema intentará transformarlo a un enlace directo cuando sea posible y deducirá el visor.
+          Pega aquí el enlace compartido público (Dropbox, Drive, YouTube, Vimeo o sitio web).
+          El sistema intentará deducir el visor y la categoría automáticamente.
         </span>
       </label>
+
+      <div id="external-link-options" style="display:none; margin-top:0.35rem;">
+        <div class="inline-row">
+          <input type="checkbox" id="item-use-iframe" />
+          <label for="item-use-iframe" style="margin:0; font-size:0.8rem;">
+            Ver dentro de AioRepo (iframe) cuando el sitio lo permita
+          </label>
+        </div>
+        <div class="small">
+          Si está activado, se usará el visor como <code>enlace</code> (iframe).  
+          Si está desactivado, se usará <code>enlaceEXT</code> (tarjeta y abrir en nueva pestaña).
+        </div>
+      </div>
 
       <label>Descripción (opcional)
         <textarea id="item-descripcion" rows="2" placeholder="Breve descripción del archivo o del propósito."></textarea>
@@ -230,9 +248,7 @@
 
       // --- Dropbox ---
       if (url.hostname.includes('dropbox.com')) {
-        // Pasar a dominio de contenido directo
         url.hostname = 'dl.dropboxusercontent.com';
-        // Forzar modo archivo crudo
         url.searchParams.set('raw', '1');
         url.searchParams.delete('dl');
         return url.toString();
@@ -240,7 +256,6 @@
 
       // --- Google Drive ---
       if (url.hostname.includes('drive.google.com')) {
-        // https://drive.google.com/file/d/FILE_ID/view?usp=sharing
         const m = url.pathname.match(/\/file\/d\/([^/]+)\/view/);
         if (m && m[1]) {
           const fileId = m[1];
@@ -257,6 +272,19 @@
     } catch {
       return original;
     }
+  }
+
+  // Helpers para clasificar URLs
+  function isYoutube(url) {
+    return /youtube\.com\/watch\?v=|youtu\.be\//i.test(url);
+  }
+
+  function isVimeo(url) {
+    return /vimeo\.com\//i.test(url);
+  }
+
+  function isStorage(url) {
+    return /dropbox\.com|dl\.dropboxusercontent\.com|drive\.google\.com|supabase\.co/i.test(url);
   }
 
   function inferMetaFromUrl(url) {
@@ -284,13 +312,40 @@
     if (lower.endsWith('.mp4') || lower.endsWith('.webm')) {
       return { visor: 'media', categoria: 'video', thumbnail: 'thumbnails/gt_mp4.png' };
     }
-    if (lower.endsWith('.mp3') || lower.endsWith('.wav')) {
+    if (lower.endsWith('.mp3') || lower.endsWith('.wav') || lower.endsWith('.ogg')) {
       return { visor: 'media', categoria: 'audio', thumbnail: 'thumbnails/gt_audio.png' };
     }
     if (lower.endsWith('.geojson') || lower.endsWith('.json')) {
       return { visor: 'map', categoria: 'mapa', thumbnail: 'thumbnails/gt_map.png' };
     }
     return { visor: 'media', categoria: 'otro', thumbnail: 'thumbnails/gt_0.png' };
+  }
+
+  // Clasificación específica para media según tu estrategia:
+  function classifyUrlForMedia(originalUrl, useIframeFlag) {
+    const url = (originalUrl || '').trim();
+
+    if (isYoutube(url) || isVimeo(url)) {
+      // Videos YT/Vimeo → visor media + categoria yt/vm
+      return {
+        visor: 'media',
+        categoria: 'yt/vm',
+        thumbnail: 'thumbnails/gt_mp4.png'
+      };
+    }
+
+    if (isStorage(url)) {
+      // Storage: usar la inferencia por extensión como ya hacías
+      return inferMetaFromUrl(url);
+    }
+
+    // Cualquier otro dominio: sitio externo genérico
+    // El visor es media, y la categoría depende solo del checkbox
+    if (useIframeFlag) {
+      return { visor: 'media', categoria: 'enlace', thumbnail: 'thumbnails/gt_0.png' };
+    } else {
+      return { visor: 'media', categoria: 'enlaceEXT', thumbnail: 'thumbnails/gt_0.png' };
+    }
   }
 
   function resetDirArcUI() {
@@ -654,6 +709,26 @@
     }
   });
 
+  // Mostrar/ocultar checkbox iframe según tipo de URL
+  const archivoInputEl = document.getElementById('item-archivo');
+  const iframeOptionsEl = document.getElementById('external-link-options');
+  archivoInputEl.addEventListener('input', () => {
+    const url = archivoInputEl.value.trim();
+    if (!url) {
+      iframeOptionsEl.style.display = 'none';
+      return;
+    }
+    if (isYoutube(url) || isVimeo(url) || isStorage(url)) {
+      // YT/Vimeo/Storage: no tiene sentido preguntar por iframe
+      iframeOptionsEl.style.display = 'none';
+    } else if (/^https?:\/\//i.test(url)) {
+      // Sitio externo genérico: ofrecer la opción iframe
+      iframeOptionsEl.style.display = 'block';
+    } else {
+      iframeOptionsEl.style.display = 'none';
+    }
+  });
+
   // Items: insertar con ID autogenerado e inferencias
   document.getElementById('btn-add-item').onclick = async () => {
     const resultEl = document.getElementById('item-result');
@@ -669,6 +744,7 @@
     const archivo = document.getElementById('item-archivo').value.trim();
     const descripcion = document.getElementById('item-descripcion').value.trim();
     const uiConfigRaw = document.getElementById('item-ui-config').value.trim();
+    const useIframe = document.getElementById('item-use-iframe').checked;
 
     if (!nombre || !coleccion || !archivo) {
       resultEl.textContent = 'Nombre, colección y archivo son obligatorios.';
@@ -681,7 +757,8 @@
     const count = dirarcItemsCache.length || 0;
     const itemId = `${baseSlug}_${String(count + 1).padStart(3, '0')}`;
 
-    const meta = inferMetaFromUrl(archivo);
+    // Clasificación según la estrategia nueva
+    const meta = classifyUrlForMedia(archivo, useIframe);
     const resolvedUrl = normalizeExternalUrl(archivo);
     const source = resolvedUrl.startsWith('http') ? 'url' : 'local';
 
@@ -726,13 +803,14 @@
     document.getElementById('item-archivo').value = '';
     document.getElementById('item-descripcion').value = '';
     document.getElementById('item-ui-config').value = '';
+    document.getElementById('item-use-iframe').checked = false;
+    iframeOptionsEl.style.display = 'none';
 
     loadDirArcItems();
   };
 
   loadSession();
-</script>
+  </script>
 
 </body>
 </html>
-
