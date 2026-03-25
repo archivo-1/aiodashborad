@@ -71,6 +71,12 @@
       background:rgba(30,64,175,0.3);
     }
     code { font-size:0.8rem; background:#020617; padding:0.1rem 0.25rem; border-radius:3px; }
+    .checkbox-row { display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.25rem; }
+    .checkbox-row label { display:flex; align-items:center; gap:0.25rem; margin:0; }
+    .checkbox-row input[type="checkbox"] { width:auto; margin-top:0; }
+    .items-group { margin-top:0.5rem; }
+    .items-group-title { font-weight:600; font-size:0.85rem; margin-top:0.5rem; }
+    .items-group-item { font-size:0.8rem; margin-left:0.75rem; }
   </style>
 </head>
 <body>
@@ -212,8 +218,20 @@
       </label>
 
       <label>Thumbnail (opcional)
-        <input id="item-thumbnail" placeholder="https://.../thumb.png" />
-        <span class="small">Pequeña imagen de portada para la galería (PNG/JPG).</span>
+        <input id="item-thumbnail" placeholder="https://.../thumb.png o thumbnails/gt_pdf.png" />
+        <span class="small">
+          Si lo dejas vacío, Aio Repo podrá usar thumbnails genéricos por tipo.
+          También puedes usar thumbnails genéricos de Aio Repo:
+        </span>
+        <div class="checkbox-row">
+          <label><input type="radio" name="thumb-suggestion" value="" checked /> Ninguna</label>
+          <label><input type="radio" name="thumb-suggestion" value="thumbnails/gt_pdf.png" /> PDF</label>
+          <label><input type="radio" name="thumb-suggestion" value="thumbnails/gt_3dm.png" /> 3DM</label>
+          <label><input type="radio" name="thumb-suggestion" value="thumbnails/gt_ifc.png" /> IFC</label>
+          <label><input type="radio" name="thumb-suggestion" value="thumbnails/gt_mp4.png" /> Vídeo</label>
+          <label><input type="radio" name="thumb-suggestion" value="thumbnails/gt_img.png" /> Imagen</label>
+          <label><input type="radio" name="thumb-suggestion" value="thumbnails/gt_0.png" /> Genérico</label>
+        </div>
       </label>
 
       <label>Descripción (opcional)
@@ -224,11 +242,47 @@
         <input id="item-tamano" placeholder="2 MB, 450 MB, etc." />
       </label>
 
-      <label>uiConfig (JSON opcional para visores 3D/BIM)
-        <textarea id="item-ui-config" rows="3"
-          placeholder='{"cameraModes":["orbit","ortho"],"visualStyles":["rendered","xray"]}'></textarea>
+      <h3 style="margin-top:1rem;">Opciones avanzadas (uiConfig)</h3>
+      <p class="small">
+        Aquí puedes definir cómo se comportan los visores 3D/BIM para este ítem:
+        modos de cámara, estilos de render y si mostrar ciertas capas/controles.
+        Si no marcas nada, se usará la configuración por defecto de Aio Repo.
+      </p>
+
+      <div>
+        <span class="small">Modos de cámara permitidos:</span>
+        <div class="checkbox-row">
+          <label><input type="checkbox" id="uicfg-cam-orbit" /> orbit</label>
+          <label><input type="checkbox" id="uicfg-cam-ortho" /> ortho</label>
+          <label><input type="checkbox" id="uicfg-cam-walk" /> walk</label>
+          <label><input type="checkbox" id="uicfg-cam-fly" /> fly</label>
+        </div>
+      </div>
+
+      <div style="margin-top:0.5rem;">
+        <span class="small">Estilos visuales permitidos:</span>
+        <div class="checkbox-row">
+          <label><input type="checkbox" id="uicfg-style-rendered" /> rendered</label>
+          <label><input type="checkbox" id="uicfg-style-clay" /> clay</label>
+          <label><input type="checkbox" id="uicfg-style-wireframe" /> wireframe</label>
+          <label><input type="checkbox" id="uicfg-style-xray" /> xray</label>
+        </div>
+      </div>
+
+      <div style="margin-top:0.5rem;">
+        <span class="small">Controles de UI:</span>
+        <div class="checkbox-row">
+          <label><input type="checkbox" id="uicfg-show-layers" /> Mostrar panel de capas</label>
+          <label><input type="checkbox" id="uicfg-show-lighting" /> Mostrar controles de luz</label>
+          <label><input type="checkbox" id="uicfg-show-shadows" /> Mostrar interruptor de sombras</label>
+        </div>
+      </div>
+
+      <label style="margin-top:0.5rem;">uiConfig (JSON resultante, sólo lectura)
+        <textarea id="item-ui-config" rows="3" readonly></textarea>
         <span class="small">
-          Para usos avanzados: puedes definir modos de cámara y estilos visuales por ítem.
+          Esta vista previa muestra el JSON que se guardará. Puedes usarlo como referencia
+          para otros proyectos. Se genera automáticamente a partir de las casillas de arriba.
         </span>
       </label>
 
@@ -240,6 +294,14 @@
         <br />
         <code>https://zihojlqhxfxdjahgrbwy.functions.supabase.co/all-content-json</code>
       </p>
+    </div>
+
+    <div style="margin-top:1.5rem;">
+      <h3>Ítems en este DirArc (vista rápida)</h3>
+      <p class="small">
+        Vista tipo explorador: agrupa los ítems por colección dentro del DirArc activo.
+      </p>
+      <div id="dirarc-items-view" class="small"></div>
     </div>
   </section>
 
@@ -254,6 +316,7 @@
     let currentUser = null;
     let currentDirArc = null;
     let dirarcsCache = [];
+    let dirarcItemsCache = [];
 
     function normalizeDropboxUrl(original) {
       try {
@@ -288,6 +351,7 @@
         userInfo.textContent = '';
         currentDirArc = null;
         dirarcsCache = [];
+        dirarcItemsCache = [];
       } else {
         authSection.style.display = '';
         dirarcSection.style.display = '';
@@ -395,6 +459,7 @@
           currentDirArc = d;
           renderDirArcList();
           renderCurrentDirArcLabel();
+          loadDirArcItems();
         };
         if (currentDirArc && currentDirArc.id === d.id) {
           li.classList.add('active');
@@ -403,6 +468,12 @@
       });
 
       renderCurrentDirArcLabel();
+      if (!currentDirArc && dirarcsCache.length > 0) {
+        currentDirArc = dirarcsCache[0];
+        renderDirArcList();
+        renderCurrentDirArcLabel();
+        loadDirArcItems();
+      }
     }
 
     function renderDirArcList() {
@@ -421,6 +492,7 @@
           currentDirArc = d;
           renderDirArcList();
           renderCurrentDirArcLabel();
+          loadDirArcItems();
         };
         if (currentDirArc && currentDirArc.id === d.id) {
           li.classList.add('active');
@@ -484,9 +556,128 @@
       currentDirArc = data;
       await loadDirArcs();
       renderCurrentDirArcLabel();
+      loadDirArcItems();
     };
 
-    // ITEMS
+    // ITEM UI: thumbnail sugeridos
+    const thumbRadios = document.querySelectorAll('input[name="thumb-suggestion"]');
+    thumbRadios.forEach(r => {
+      r.addEventListener('change', () => {
+        const val = r.value;
+        const thumbInput = document.getElementById('item-thumbnail');
+        if (val) {
+          thumbInput.value = val;
+        } else if (thumbInput.value.startsWith('thumbnails/gt_')) {
+          thumbInput.value = '';
+        }
+      });
+    });
+
+    // ITEM UI: generar uiConfig JSON preview
+    function buildUiConfig() {
+      const cams = [];
+      if (document.getElementById('uicfg-cam-orbit').checked) cams.push('orbit');
+      if (document.getElementById('uicfg-cam-ortho').checked) cams.push('ortho');
+      if (document.getElementById('uicfg-cam-walk').checked) cams.push('walk');
+      if (document.getElementById('uicfg-cam-fly').checked) cams.push('fly');
+
+      const styles = [];
+      if (document.getElementById('uicfg-style-rendered').checked) styles.push('rendered');
+      if (document.getElementById('uicfg-style-clay').checked) styles.push('clay');
+      if (document.getElementById('uicfg-style-wireframe').checked) styles.push('wireframe');
+      if (document.getElementById('uicfg-style-xray').checked) styles.push('xray');
+
+      const showLayers = document.getElementById('uicfg-show-layers').checked;
+      const showLighting = document.getElementById('uicfg-show-lighting').checked;
+      const showShadows = document.getElementById('uicfg-show-shadows').checked;
+
+      const cfg = {};
+      if (cams.length) cfg.cameraModes = cams;
+      if (styles.length) cfg.visualStyles = styles;
+      if (showLayers) cfg.showLayers = true;
+      if (showLighting) cfg.showLighting = true;
+      if (showShadows) cfg.showShadows = true;
+
+      const textarea = document.getElementById('item-ui-config');
+      if (Object.keys(cfg).length === 0) {
+        textarea.value = '';
+        return null;
+      } else {
+        textarea.value = JSON.stringify(cfg);
+        return cfg;
+      }
+    }
+
+    [
+      'uicfg-cam-orbit','uicfg-cam-ortho','uicfg-cam-walk','uicfg-cam-fly',
+      'uicfg-style-rendered','uicfg-style-clay','uicfg-style-wireframe','uicfg-style-xray',
+      'uicfg-show-layers','uicfg-show-lighting','uicfg-show-shadows'
+    ].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener('change', buildUiConfig);
+    });
+
+    // ITEMS: cargar vista explorador
+    async function loadDirArcItems() {
+      const viewEl = document.getElementById('dirarc-items-view');
+      viewEl.innerHTML = '';
+      dirarcItemsCache = [];
+
+      if (!currentDirArc) {
+        viewEl.textContent = 'Selecciona un DirArc para ver sus ítems.';
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('items')
+        .select('*')
+        .eq('dirarc_id', currentDirArc.id)
+        .order('coleccion', { ascending: true })
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error(error);
+        viewEl.textContent = 'Error cargando ítems del DirArc: ' + error.message;
+        return;
+      }
+
+      dirarcItemsCache = data || [];
+
+      if (!dirarcItemsCache.length) {
+        viewEl.textContent = 'Este DirArc no tiene ítems todavía.';
+        return;
+      }
+
+      // agrupar por coleccion
+      const groups = {};
+      dirarcItemsCache.forEach(it => {
+        const key = it.coleccion || '(sin colección)';
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(it);
+      });
+
+      const keys = Object.keys(groups).sort((a,b) => a.localeCompare(b));
+
+      keys.forEach(coll => {
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'items-group';
+        const title = document.createElement('div');
+        title.className = 'items-group-title';
+        title.textContent = `Colección: ${coll}`;
+        groupDiv.appendChild(title);
+
+        groups[coll].forEach(it => {
+          const line = document.createElement('div');
+          line.className = 'items-group-item';
+          line.textContent = `• ${it.item_id} — ${it.nombre}  [visor: ${it.visor}, categoria: ${it.categoria}]`;
+          groupDiv.appendChild(line);
+        });
+
+        viewEl.appendChild(groupDiv);
+      });
+    }
+
+    // ITEMS: insertar
     document.getElementById('btn-add-item').onclick = async () => {
       const resultEl = document.getElementById('item-result');
 
@@ -505,7 +696,6 @@
       const thumbnail = document.getElementById('item-thumbnail').value.trim();
       const descripcion = document.getElementById('item-descripcion').value.trim();
       const tamano = document.getElementById('item-tamano').value.trim();
-      const uiConfigRaw = document.getElementById('item-ui-config').value.trim();
 
       if (!itemId || !nombre || !visor || !categoria || !coleccion || !archivo) {
         resultEl.textContent = 'ID, nombre, visor, categoría, colección y archivo son obligatorios.';
@@ -513,17 +703,7 @@
         return;
       }
 
-      let uiConfig = null;
-      if (uiConfigRaw) {
-        try {
-          uiConfig = JSON.parse(uiConfigRaw);
-        } catch (e) {
-          resultEl.textContent = 'uiConfig no es JSON válido.';
-          resultEl.className = 'small error';
-          return;
-        }
-      }
-
+      const uiConfig = buildUiConfig(); // puede ser objeto o null
       const resolvedUrl = normalizeDropboxUrl(archivo);
       const source = resolvedUrl.startsWith('http') ? 'url' : 'local';
 
@@ -560,6 +740,14 @@
       document.getElementById('item-descripcion').value = '';
       document.getElementById('item-tamano').value = '';
       document.getElementById('item-ui-config').value = '';
+      [
+        'uicfg-cam-orbit','uicfg-cam-ortho','uicfg-cam-walk','uicfg-cam-fly',
+        'uicfg-style-rendered','uicfg-style-clay','uicfg-style-wireframe','uicfg-style-xray',
+        'uicfg-show-layers','uicfg-show-lighting','uicfg-show-shadows'
+      ].forEach(id => { document.getElementById(id).checked = false; });
+      document.querySelectorAll('input[name="thumb-suggestion"]')[0].checked = true;
+
+      loadDirArcItems();
     };
 
     loadSession();
