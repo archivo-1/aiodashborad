@@ -274,14 +274,13 @@
     }
   }
 
-  // Helpers para clasificar URLs
   function isYoutube(url) {
-    return /youtube\.com\/watch\?v=|youtu\.be\//i.test(url);
-  }
+  return /youtube\.com\/watch\?v=|youtu\.be\//i.test(url);
+}
 
-  function isVimeo(url) {
-    return /vimeo\.com\//i.test(url);
-  }
+function isVimeo(url) {
+  return /vimeo\.com\//i.test(url);
+}
 
   function isStorage(url) {
     return /dropbox\.com|dl\.dropboxusercontent\.com|drive\.google\.com|supabase\.co/i.test(url);
