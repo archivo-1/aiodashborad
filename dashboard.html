@@ -224,21 +224,46 @@
     let dirarcsCache = [];
     let dirarcItemsCache = [];
 
-    function normalizeDropboxUrl(original) {
-      try {
-        const url = new URL(original);
-        if (url.hostname.endsWith('dropbox.com')) {
-          if (url.searchParams.has('dl')) {
-            url.searchParams.set('dl', '1');
-          } else {
-            url.searchParams.append('dl', '1');
-          }
-        }
-        return url.toString();
-      } catch {
-        return original;
-      }
+    function normalizeExternalUrl(original) {
+  try {
+    const url = new URL(original);
+
+    // --- Dropbox ---
+    if (url.hostname.includes('dropbox.com')) {
+      // Fuerza modo "raw" (archivo directo) y limpia dl para evitar conflictos.
+      // Dropbox documenta que ?raw=1 sirve el archivo directamente.[web:18][web:191]
+      url.searchParams.set('raw', '1');
+      url.searchParams.delete('dl');
+      return url.toString();
     }
+
+    // --- Google Drive ---
+    if (url.hostname.includes('drive.google.com')) {
+      // Patrón típico: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+      const m = url.pathname.match(/\/file\/d\/([^/]+)\/view/);
+      if (m && m[1]) {
+        const fileId = m[1];
+        // Forzamos descarga directa usando el patrón uc?export=download.[web:161][web:169][web:181]
+        return `https://drive.google.com/uc?export=download&id=${fileId}`;
+      }
+
+      // Si ya viene en formato /uc, nos aseguramos de export=download
+      if (url.pathname.startsWith('/uc')) {
+        url.searchParams.set('export', 'download');
+        return url.toString();
+      }
+
+      // Otros formatos de Drive: devolver tal cual (por ahora).
+      return original;
+    }
+
+    // Otros proveedores: devolver tal cual.
+    return original;
+  } catch {
+    // Si no es una URL válida, devolvemos el original (puede ser ruta local en el futuro).
+    return original;
+  }
+}
 
     function inferMetaFromUrl(url) {
       const lower = (url || '').toLowerCase();
@@ -632,7 +657,7 @@
       const itemId = `${baseSlug}_${String(count + 1).padStart(3,'0')}`;
 
       const meta = inferMetaFromUrl(archivo);
-      const resolvedUrl = normalizeDropboxUrl(archivo);
+      const resolvedUrl = normalizeExternalUrl(archivo);
       const source = resolvedUrl.startsWith('http') ? 'url' : 'local';
 
       let uiConfig = null;
