@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Aio Repo - Host Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body style="font-family: system-ui; max-width: 900px; margin: 2rem auto; padding: 1rem;">
+  <h1>Aio Repo – Host Dashboard</h1>
+
+  <section style="margin-top: 2rem; padding: 1rem; border: 1px solid #ccc;">
+    <h2>1. Crear colección</h2>
+    <label>Slug (URL): <input id="col-slug" placeholder="casa-herrera" /></label><br/>
+    <label>Título: <input id="col-title" placeholder="Casa Herrera – Presentación" /></label><br/>
+    <label>Descripción: <br/>
+      <textarea id="col-desc" rows="3" style="width:100%;"></textarea>
+    </label><br/>
+    <button id="btn-create-collection">Crear colección</button>
+
+    <div id="col-result" style="margin-top:1rem; font-size:0.9rem; color:#444;"></div>
+  </section>
+
+  <section style="margin-top: 2rem; padding: 1rem; border: 1px solid #ccc;">
+    <h2>2. Añadir ítem a una colección</h2>
+    <p style="font-size:0.9rem;">
+      Primero pega el <strong>slug</strong> de la colección y la <strong>clave de edición</strong> (owner_secret) que recibiste al crearla.
+    </p>
+    <label>Slug colección: <input id="item-col-slug" placeholder="casa-herrera" /></label><br/>
+    <label>Owner secret: <input id="item-owner-secret" style="width: 100%;" /></label><br/><br/>
+
+    <label>ID (para Aio Repo): <input id="item-id" placeholder="IFC_CLIENT01" /></label><br/>
+    <label>Nombre: <input id="item-nombre" placeholder="Modelo IFC Cliente" /></label><br/>
+    <label>Visor (ifc, 3dm, media, map, dxf): <input id="item-visor" placeholder="ifc" /></label><br/>
+    <label>Categoría (modelo-BIM, modelo-3d, pdf, video, etc.): <input id="item-categoria" placeholder="modelo-BIM" /></label><br/>
+    <label>Colección (texto visible en Aio Repo): <input id="item-coleccion" placeholder="Casa Herrera – Fase 2" /></label><br/>
+
+    <label>Archivo (URL Dropbox o ruta local): <input id="item-archivo" style="width:100%;" placeholder="https://www.dropbox.com/..." /></label><br/>
+    <label>Thumbnail (opcional): <input id="item-thumbnail" style="width:100%;" /></label><br/>
+    <label>Descripción (opcional):<br/>
+      <textarea id="item-descripcion" rows="3" style="width:100%;"></textarea>
+    </label><br/>
+    <label>Tamaño (texto opcional): <input id="item-tamano" /></label><br/>
+
+    <label>uiConfig (JSON opcional):<br/>
+      <textarea id="item-ui-config" rows="3" style="width:100%;" placeholder='{"cameraModes":["orbit"],"visualStyles":["rendered"]}'></textarea>
+    </label><br/>
+
+    <label>Lat (mapa opcional): <input id="item-lat" /></label>
+    <label>Lon: <input id="item-lon" /></label>
+    <label>Zoom: <input id="item-zoom" /></label><br/>
+
+    <button id="btn-add-item">Añadir ítem</button>
+
+    <div id="item-result" style="margin-top:1rem; font-size:0.9rem; color:#444;"></div>
+  </section>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+    // TODO: replace with your real values from Supabase Settings → API
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
+    const SUPABASE_ANON_KEY = 'YOUR_ANON_PUBLIC_KEY_HERE';
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function randomOwnerSecret() {
+      return crypto.randomUUID() + '-' + crypto.randomUUID();
+    }
+
+    function normalizeDropboxUrl(original) {
+      try {
+        const url = new URL(original);
+        if (url.hostname.endsWith('dropbox.com')) {
+          if (url.searchParams.has('dl')) {
+            url.searchParams.set('dl', '1');
+          } else {
+            url.searchParams.append('dl', '1');
+          }
+        }
+        return url.toString();
+      } catch {
+        return original;
+      }
+    }
+
+    // 1) Crear colección
+    document.getElementById('btn-create-collection').onclick = async () => {
+      const slug = document.getElementById('col-slug').value.trim();
+      const title = document.getElementById('col-title').value.trim();
+      const description = document.getElementById('col-desc').value.trim();
+      const resultEl = document.getElementById('col-result');
+
+      if (!slug || !title) {
+        resultEl.textContent = 'Slug y título son obligatorios.';
+        return;
+      }
+
+      const ownerSecret = randomOwnerSecret();
+
+      const { data, error } = await supabase
+        .from('collections')
+        .insert({
+          slug,
+          title,
+          description,
+          owner_secret: ownerSecret
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error(error);
+        resultEl.textContent = 'Error creando colección: ' + error.message;
+        return;
+      }
+
+      const viewerUrl = `https://archivo-1.github.io/aiorepo/?collection=${encodeURIComponent(slug)}`;
+      const editUrl = `https://your-dashboard-host/edit?collection=${encodeURIComponent(slug)}&key=${encodeURIComponent(ownerSecret)}`;
+
+      resultEl.innerHTML = `
+        <div><strong>Colección creada.</strong></div>
+        <div>Slug: <code>${slug}</code></div>
+        <div>Owner secret (guárdalo):<br/><code>${ownerSecret}</code></div>
+        <div style="margin-top:0.5rem;">URL sugerida para Aio Repo: <code>${viewerUrl}</code></div>
+        <div style="margin-top:0.5rem;">URL sugerida de edición (cuando la tengas hospedada):<br/><code>${editUrl}</code></div>
+      `;
+    };
+
+    // 2) Añadir ítem
+    document.getElementById('btn-add-item').onclick = async () => {
+      const slug = document.getElementById('item-col-slug').value.trim();
+      const key = document.getElementById('item-owner-secret').value.trim();
+      const resultEl = document.getElementById('item-result');
+
+      if (!slug || !key) {
+        resultEl.textContent = 'Slug y owner_secret son obligatorios.';
+        return;
+      }
+
+      // Buscar colección con slug + owner_secret
+      const { data: col, error: colError } = await supabase
+        .from('collections')
+        .select('*')
+        .eq('slug', slug)
+        .eq('owner_secret', key)
+        .single();
+
+      if (colError || !col) {
+        console.error(colError);
+        resultEl.textContent = 'No se encontró colección con ese slug y owner_secret.';
+        return;
+      }
+
+      const itemId = document.getElementById('item-id').value.trim();
+      const nombre = document.getElementById('item-nombre').value.trim();
+      const visor = document.getElementById('item-visor').value.trim();
+      const categoria = document.getElementById('item-categoria').value.trim();
+      const coleccion = document.getElementById('item-coleccion').value.trim();
+      const archivo = document.getElementById('item-archivo').value.trim();
+      const thumbnail = document.getElementById('item-thumbnail').value.trim();
+      const descripcion = document.getElementById('item-descripcion').value.trim();
+      const tamano = document.getElementById('item-tamano').value.trim();
+      const uiConfigRaw = document.getElementById('item-ui-config').value.trim();
+      const latStr = document.getElementById('item-lat').value.trim();
+      const lonStr = document.getElementById('item-lon').value.trim();
+      const zoomStr = document.getElementById('item-zoom').value.trim();
+
+      if (!itemId || !nombre || !visor || !categoria || !coleccion || !archivo) {
+        resultEl.textContent = 'ID, nombre, visor, categoría, colección y archivo son obligatorios.';
+        return;
+      }
+
+      let uiConfig = null;
+      if (uiConfigRaw) {
+        try {
+          uiConfig = JSON.parse(uiConfigRaw);
+        } catch (e) {
+          resultEl.textContent = 'uiConfig no es JSON válido.';
+          return;
+        }
+      }
+
+      const resolvedUrl = normalizeDropboxUrl(archivo);
+      const source = resolvedUrl.startsWith('http') ? 'url' : 'local';
+
+      const lat = latStr ? parseFloat(latStr) : null;
+      const lon = lonStr ? parseFloat(lonStr) : null;
+      const zoom = zoomStr ? parseInt(zoomStr, 10) : null;
+
+      const { error: insertError } = await supabase.from('items').insert({
+        collection_id: col.id,
+        item_id: itemId,
+        nombre,
+        visor,
+        categoria,
+        coleccion,
+        source,
+        archivo,
+        resolved_url: resolvedUrl,
+        descripcion,
+        tamano,
+        thumbnail,
+        ui_config: uiConfig,
+        lat,
+        lon,
+        zoom
+      });
+
+      if (insertError) {
+        console.error(insertError);
+        resultEl.textContent = 'Error insertando ítem: ' + insertError.message;
+        return;
+      }
+
+      resultEl.textContent = 'Ítem creado correctamente.';
+    };
+  </script>
+</body>
+</html>
