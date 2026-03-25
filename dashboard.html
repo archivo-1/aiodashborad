@@ -266,37 +266,38 @@
 }
 
     function inferMetaFromUrl(url) {
-      const lower = (url || '').toLowerCase();
-      if (lower.endsWith('.pdf')) {
-        return { visor: 'media', categoria: 'pdf', thumbnail: 'thumbnails/gt_pdf.png' };
-      }
-      if (lower.endsWith('.ifc')) {
-        return { visor: 'ifc', categoria: 'modelo-BIM', thumbnail: 'thumbnails/gt_ifc.png' };
-      }
-      if (lower.endsWith('.3dm')) {
-        return { visor: '3dm', categoria: 'modelo-3d', thumbnail: 'thumbnails/gt_3dm.png' };
-      }
-      if (lower.endsWith('.dxf')) {
-        return { visor: 'dxf', categoria: 'plano-2d', thumbnail: 'thumbnails/gt_dxf.png' };
-      }
-      if (lower.endsWith('.glb')) {
-        return { visor: 'glb', categoria: 'modelo-3d', thumbnail: 'thumbnails/gt_glb.png' };
-      }
-      if (lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png') || lower.endsWith('.webp')) {
-        return { visor: 'media', categoria: 'imagen', thumbnail: 'thumbnails/gt_img.png' };
-      }
-      if (lower.endsWith('.mp4') || lower.endsWith('.webm')) {
-        return { visor: 'media', categoria: 'video', thumbnail: 'thumbnails/gt_mp4.png' };
-      }
-      if (lower.endsWith('.mp3') || lower.endsWith('.wav')) {
-        return { visor: 'media', categoria: 'audio', thumbnail: 'thumbnails/gt_audio.png' };
-      }
-      if (lower.endsWith('.geojson') || lower.endsWith('.json')) {
-        return { visor: 'map', categoria: 'mapa', thumbnail: 'thumbnails/gt_map.png' };
-      }
-      return { visor: 'media', categoria: 'otro', thumbnail: 'thumbnails/gt_0.png' };
-    }
+  const safe = (url || '').split('#')[0].split('?')[0]; // quita query y fragmentos[web:202][web:209]
+  const lower = safe.toLowerCase();
 
+  if (lower.endsWith('.pdf')) {
+    return { visor: 'media', categoria: 'pdf', thumbnail: 'thumbnails/gt_pdf.png' };
+  }
+  if (lower.endsWith('.ifc')) {
+    return { visor: 'ifc', categoria: 'modelo-BIM', thumbnail: 'thumbnails/gt_ifc.png' };
+  }
+  if (lower.endsWith('.3dm')) {
+    return { visor: '3dm', categoria: 'modelo-3d', thumbnail: 'thumbnails/gt_3dm.png' };
+  }
+  if (lower.endsWith('.dxf')) {
+    return { visor: 'dxf', categoria: 'plano-2d', thumbnail: 'thumbnails/gt_dxf.png' };
+  }
+  if (lower.endsWith('.glb')) {
+    return { visor: 'glb', categoria: 'modelo-3d', thumbnail: 'thumbnails/gt_glb.png' };
+  }
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png') || lower.endsWith('.webp')) {
+    return { visor: 'media', categoria: 'imagen', thumbnail: 'thumbnails/gt_img.png' };
+  }
+  if (lower.endsWith('.mp4') || lower.endsWith('.webm')) {
+    return { visor: 'media', categoria: 'video', thumbnail: 'thumbnails/gt_mp4.png' };
+  }
+  if (lower.endsWith('.mp3') || lower.endsWith('.wav')) {
+    return { visor: 'media', categoria: 'audio', thumbnail: 'thumbnails/gt_audio.png' };
+  }
+  if (lower.endsWith('.geojson') || lower.endsWith('.json')) {
+    return { visor: 'map', categoria: 'mapa', thumbnail: 'thumbnails/gt_map.png' };
+  }
+  return { visor: 'media', categoria: 'otro', thumbnail: 'thumbnails/gt_0.png' };
+}
     function resetDirArcUI() {
       currentDirArc = null;
       dirarcsCache = [];
