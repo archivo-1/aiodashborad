@@ -608,11 +608,41 @@
         groupDiv.appendChild(title);
 
         groups[coll].forEach(it => {
-          const line = document.createElement('div');
-          line.className = 'items-group-item';
-          line.textContent = `• ${it.item_id} — ${it.nombre}  [visor: ${it.visor}, categoria: ${it.categoria}]`;
-          groupDiv.appendChild(line);
-        });
+  const line = document.createElement('div');
+  line.className = 'items-group-item';
+
+  const label = document.createElement('span');
+  label.textContent = `• ${it.item_id} — ${it.nombre}  [visor: ${it.visor}, categoria: ${it.categoria}]`;
+
+  const btn = document.createElement('button');
+  btn.textContent = 'Borrar';
+  btn.className = 'secondary';
+  btn.style.marginLeft = '0.5rem';
+
+  btn.onclick = async (e) => {
+    e.stopPropagation();
+    const ok = confirm(`¿Borrar el ítem ${it.item_id}?`);
+    if (!ok) return;
+
+    const { error } = await supabase
+      .from('items')
+      .delete()
+      .eq('item_id', it.item_id); // borramos por item_id[web:211][web:212]
+
+    if (error) {
+      console.error(error);
+      alert('Error borrando ítem: ' + error.message);
+      return;
+    }
+
+    await loadDirArcItems(); // recarga la lista después de borrar
+  };
+
+  line.appendChild(label);
+  line.appendChild(btn);
+  groupDiv.appendChild(line);
+});
+
 
         viewEl.appendChild(groupDiv);
       });
