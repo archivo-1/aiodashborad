@@ -230,8 +230,10 @@
 
     // --- Dropbox ---
     if (url.hostname.includes('dropbox.com')) {
-      // Fuerza modo "raw" (archivo directo) y limpia dl para evitar conflictos.
-      // Dropbox documenta que ?raw=1 sirve el archivo directamente.[web:18][web:191]
+      // Pasar a dominio de contenido directo.[web:239]
+      url.hostname = 'dl.dropboxusercontent.com';
+
+      // Forzar modo archivo crudo.
       url.searchParams.set('raw', '1');
       url.searchParams.delete('dl');
       return url.toString();
@@ -239,28 +241,20 @@
 
     // --- Google Drive ---
     if (url.hostname.includes('drive.google.com')) {
-      // Patrón típico: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
       const m = url.pathname.match(/\/file\/d\/([^/]+)\/view/);
       if (m && m[1]) {
         const fileId = m[1];
-        // Forzamos descarga directa usando el patrón uc?export=download.[web:161][web:169][web:181]
-        return `https://drive.google.com/uc?export=download&id=${fileId}`;
+        return `https://drive.google.com/uc?export=download&id=${fileId}`;[web:161][web:181]
       }
-
-      // Si ya viene en formato /uc, nos aseguramos de export=download
       if (url.pathname.startsWith('/uc')) {
         url.searchParams.set('export', 'download');
         return url.toString();
       }
-
-      // Otros formatos de Drive: devolver tal cual (por ahora).
       return original;
     }
 
-    // Otros proveedores: devolver tal cual.
     return original;
   } catch {
-    // Si no es una URL válida, devolvemos el original (puede ser ruta local en el futuro).
     return original;
   }
 }
