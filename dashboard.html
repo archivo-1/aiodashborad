@@ -71,12 +71,15 @@
       background:rgba(30,64,175,0.3);
     }
     code { font-size:0.8rem; background:#020617; padding:0.1rem 0.25rem; border-radius:3px; }
+    .items-group { margin-top:0.5rem; }
+    .items-group-title { font-weight:600; font-size:0.85rem; margin-top:0.5rem; }
+    .items-group-item { font-size:0.8rem; margin-left:0.75rem; }
   </style>
 </head>
 <body>
   <h1>Aio Repo – DirArc Dashboard</h1>
   <p class="small">
-    Aquí administras tus <strong>DirArc</strong> (Directorios Aio Repo de Colecciones): conjuntos de archivos
+    Administra tus <strong>DirArc</strong> (Directorios Aio Repo de Colecciones): conjuntos de archivos
     organizados en colecciones que luego verás en Aio Repo con los visores.
   </p>
 
@@ -158,48 +161,17 @@
         “cápsula” en Aio Repo. Más tarde Aio Repo lo mostrará con el visor adecuado.
       </p>
 
-      <label>ID interno (para Aio Repo, único dentro de tu DirArc)
-        <input id="item-id" placeholder="IFC_CLIENT01" />
-        <span class="small">Ejemplo: IFC_CLIENT01, PDF_MEMORIA01, VIDEO_VISITA01.</span>
-      </label>
-
       <label>Nombre visible
         <input id="item-nombre" placeholder="Modelo IFC – Cliente X" />
       </label>
 
-      <label>Visor
-        <select id="item-visor">
-          <option value="">Selecciona un visor…</option>
-          <option value="media">media (PDF, imagen, vídeo, audio)</option>
-          <option value="ifc">ifc (modelo BIM .ifc)</option>
-          <option value="3dm">3dm (modelo Rhino .3dm)</option>
-          <option value="map">map (GeoJSON / mapa)</option>
-          <option value="dxf">dxf (planos .dxf)</option>
-          <option value="glb">glb (modelos .glb)</option>
+      <label>Colección dentro del DirArc
+        <select id="item-coleccion-select">
+          <option value="">Escribe una nueva colección…</option>
         </select>
-      </label>
-
-      <label>Categoría
-        <select id="item-categoria">
-          <option value="">Selecciona una categoría…</option>
-          <option value="modelo-BIM">Modelo BIM</option>
-          <option value="modelo-3d">Modelo 3D</option>
-          <option value="plano-2d">Plano 2D</option>
-          <option value="pdf">PDF</option>
-          <option value="imagen">Imagen</option>
-          <option value="video">Vídeo</option>
-          <option value="audio">Audio</option>
-          <option value="mapa">Mapa</option>
-          <option value="otro">Otro</option>
-        </select>
-        <span class="small">Esto se usa para agrupar en la galería (filtros por tipo).</span>
-      </label>
-
-      <label>Colección (nombre visible dentro del DirArc)
-        <input id="item-coleccion" placeholder="Casa Herrera – Fase 2" />
+        <input id="item-coleccion-input" placeholder="Casa Herrera – Fase 2" />
         <span class="small">
-          Ejemplo: “Casa Herrera – Fase 2”, “Proyecto Concurso X”, “Portafolio Imágenes”.
-          Aio Repo agrupa por este nombre dentro del DirArc.
+          Puedes reutilizar colecciones existentes del DirArc o escribir una nueva.
         </span>
       </label>
 
@@ -207,29 +179,17 @@
         <input id="item-archivo" placeholder="https://www.dropbox.com/..." />
         <span class="small">
           Pega aquí el enlace compartido público de Dropbox (o cualquier URL accesible por HTTP).
-          El sistema intentará transformarlo a un enlace directo cuando sea posible.
+          El sistema intentará transformarlo a un enlace directo cuando sea posible y deducirá el visor.
         </span>
-      </label>
-
-      <label>Thumbnail (opcional)
-        <input id="item-thumbnail" placeholder="https://.../thumb.png" />
-        <span class="small">Pequeña imagen de portada para la galería (PNG/JPG).</span>
       </label>
 
       <label>Descripción (opcional)
         <textarea id="item-descripcion" rows="2" placeholder="Breve descripción del archivo o del propósito."></textarea>
       </label>
 
-      <label>Tamaño (texto opcional)
-        <input id="item-tamano" placeholder="2 MB, 450 MB, etc." />
-      </label>
-
-      <label>uiConfig (JSON opcional para visores 3D/BIM)
-        <textarea id="item-ui-config" rows="3"
-          placeholder='{"cameraModes":["orbit","ortho"],"visualStyles":["rendered","xray"]}'></textarea>
-        <span class="small">
-          Para usos avanzados: puedes definir modos de cámara y estilos visuales por ítem.
-        </span>
+      <!-- uiConfig oculto (por ahora no se usa, pero se conserva por si lo necesitas manualmente) -->
+      <label style="display:none;">uiConfig (JSON opcional)
+        <textarea id="item-ui-config" rows="3" placeholder='{"cameraModes":["orbit"],"visualStyles":["rendered"]}'></textarea>
       </label>
 
       <button id="btn-add-item">Añadir ítem al DirArc</button>
@@ -240,6 +200,14 @@
         <br />
         <code>https://zihojlqhxfxdjahgrbwy.functions.supabase.co/all-content-json</code>
       </p>
+    </div>
+
+    <div style="margin-top:1.5rem;">
+      <h3>Ítems en este DirArc (vista rápida)</h3>
+      <p class="small">
+        Vista tipo explorador: agrupa los ítems por colección dentro del DirArc activo.
+      </p>
+      <div id="dirarc-items-view" class="small"></div>
     </div>
   </section>
 
@@ -254,6 +222,7 @@
     let currentUser = null;
     let currentDirArc = null;
     let dirarcsCache = [];
+    let dirarcItemsCache = [];
 
     function normalizeDropboxUrl(original) {
       try {
@@ -269,6 +238,38 @@
       } catch {
         return original;
       }
+    }
+
+    function inferMetaFromUrl(url) {
+      const lower = (url || '').toLowerCase();
+      if (lower.endsWith('.pdf')) {
+        return { visor: 'media', categoria: 'pdf', thumbnail: 'thumbnails/gt_pdf.png' };
+      }
+      if (lower.endsWith('.ifc')) {
+        return { visor: 'ifc', categoria: 'modelo-BIM', thumbnail: 'thumbnails/gt_ifc.png' };
+      }
+      if (lower.endsWith('.3dm')) {
+        return { visor: '3dm', categoria: 'modelo-3d', thumbnail: 'thumbnails/gt_3dm.png' };
+      }
+      if (lower.endsWith('.dxf')) {
+        return { visor: 'dxf', categoria: 'plano-2d', thumbnail: 'thumbnails/gt_dxf.png' };
+      }
+      if (lower.endsWith('.glb')) {
+        return { visor: 'glb', categoria: 'modelo-3d', thumbnail: 'thumbnails/gt_glb.png' };
+      }
+      if (lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png') || lower.endsWith('.webp')) {
+        return { visor: 'media', categoria: 'imagen', thumbnail: 'thumbnails/gt_img.png' };
+      }
+      if (lower.endsWith('.mp4') || lower.endsWith('.webm')) {
+        return { visor: 'media', categoria: 'video', thumbnail: 'thumbnails/gt_mp4.png' };
+      }
+      if (lower.endsWith('.mp3') || lower.endsWith('.wav')) {
+        return { visor: 'media', categoria: 'audio', thumbnail: 'thumbnails/gt_audio.png' };
+      }
+      if (lower.endsWith('.geojson') || lower.endsWith('.json')) {
+        return { visor: 'map', categoria: 'mapa', thumbnail: 'thumbnails/gt_map.png' };
+      }
+      return { visor: 'media', categoria: 'otro', thumbnail: 'thumbnails/gt_0.png' };
     }
 
     function setAuthUI(user) {
@@ -288,6 +289,7 @@
         userInfo.textContent = '';
         currentDirArc = null;
         dirarcsCache = [];
+        dirarcItemsCache = [];
       } else {
         authSection.style.display = '';
         dirarcSection.style.display = '';
@@ -308,7 +310,7 @@
       setAuthUI(data.user || null);
     }
 
-    // AUTH
+    // Auth
     document.getElementById('btn-signup').onclick = async () => {
       const email = document.getElementById('signup-email').value.trim();
       const password = document.getElementById('signup-password').value.trim();
@@ -320,7 +322,7 @@
         return;
       }
 
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { error } = await supabase.auth.signUp({ email, password });
       if (error) {
         resultEl.textContent = 'Error al registrar: ' + error.message;
         resultEl.className = 'small error';
@@ -359,7 +361,7 @@
       document.getElementById('login-result').className = 'small ok';
     };
 
-    // DIRARC
+    // DirArcs
     async function loadDirArcs() {
       const listEl = document.getElementById('dirarc-list');
       const resultEl = document.getElementById('dirarc-list-result');
@@ -395,6 +397,7 @@
           currentDirArc = d;
           renderDirArcList();
           renderCurrentDirArcLabel();
+          loadDirArcItems();
         };
         if (currentDirArc && currentDirArc.id === d.id) {
           li.classList.add('active');
@@ -403,6 +406,12 @@
       });
 
       renderCurrentDirArcLabel();
+      if (!currentDirArc && dirarcsCache.length > 0) {
+        currentDirArc = dirarcsCache[0];
+        renderDirArcList();
+        renderCurrentDirArcLabel();
+        loadDirArcItems();
+      }
     }
 
     function renderDirArcList() {
@@ -421,6 +430,7 @@
           currentDirArc = d;
           renderDirArcList();
           renderCurrentDirArcLabel();
+          loadDirArcItems();
         };
         if (currentDirArc && currentDirArc.id === d.id) {
           li.classList.add('active');
@@ -484,9 +494,97 @@
       currentDirArc = data;
       await loadDirArcs();
       renderCurrentDirArcLabel();
+      loadDirArcItems();
     };
 
-    // ITEMS
+    // Items: vista explorador
+    async function loadDirArcItems() {
+      const viewEl = document.getElementById('dirarc-items-view');
+      const collSelect = document.getElementById('item-coleccion-select');
+      viewEl.innerHTML = '';
+      dirarcItemsCache = [];
+      collSelect.innerHTML = '';
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'Escribe una nueva colección…';
+      collSelect.appendChild(opt);
+
+      if (!currentDirArc) {
+        viewEl.textContent = 'Selecciona un DirArc para ver sus ítems.';
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('items')
+        .select('*')
+        .eq('dirarc_id', currentDirArc.id)
+        .order('coleccion', { ascending: true })
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error(error);
+        viewEl.textContent = 'Error cargando ítems del DirArc: ' + error.message;
+        return;
+      }
+
+      dirarcItemsCache = data || [];
+
+      if (!dirarcItemsCache.length) {
+        viewEl.textContent = 'Este DirArc no tiene ítems todavía.';
+        return;
+      }
+
+      // agrupar por coleccion
+      const groups = {};
+      dirarcItemsCache.forEach(it => {
+        const key = it.coleccion || '(sin colección)';
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(it);
+      });
+
+      const keys = Object.keys(groups).sort((a,b) => a.localeCompare(b));
+
+      keys.forEach(coll => {
+        // añadir al select
+        if (coll !== '(sin colección)') {
+          const o = document.createElement('option');
+          o.value = coll;
+          o.textContent = coll;
+          collSelect.appendChild(o);
+        }
+
+        // render en vista
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'items-group';
+        const title = document.createElement('div');
+        title.className = 'items-group-title';
+        title.textContent = `Colección: ${coll}`;
+        groupDiv.appendChild(title);
+
+        groups[coll].forEach(it => {
+          const line = document.createElement('div');
+          line.className = 'items-group-item';
+          line.textContent = `• ${it.item_id} — ${it.nombre}  [visor: ${it.visor}, categoria: ${it.categoria}]`;
+          groupDiv.appendChild(line);
+        });
+
+        viewEl.appendChild(groupDiv);
+      });
+    }
+
+    // Items: selección de colección (dropdown + texto)
+    const collSelectEl = document.getElementById('item-coleccion-select');
+    const collInputEl = document.getElementById('item-coleccion-input');
+    collSelectEl.addEventListener('change', () => {
+      const val = collSelectEl.value;
+      if (val) {
+        collInputEl.value = val;
+      } else {
+        collInputEl.value = '';
+      }
+    });
+
+    // Items: insertar con ID autogenerado e inferencias
     document.getElementById('btn-add-item').onclick = async () => {
       const resultEl = document.getElementById('item-result');
 
@@ -496,50 +594,53 @@
         return;
       }
 
-      const itemId = document.getElementById('item-id').value.trim();
       const nombre = document.getElementById('item-nombre').value.trim();
-      const visor = document.getElementById('item-visor').value.trim();
-      const categoria = document.getElementById('item-categoria').value.trim();
-      const coleccion = document.getElementById('item-coleccion').value.trim();
+      const coleccion = document.getElementById('item-coleccion-input').value.trim();
       const archivo = document.getElementById('item-archivo').value.trim();
-      const thumbnail = document.getElementById('item-thumbnail').value.trim();
       const descripcion = document.getElementById('item-descripcion').value.trim();
-      const tamano = document.getElementById('item-tamano').value.trim();
       const uiConfigRaw = document.getElementById('item-ui-config').value.trim();
 
-      if (!itemId || !nombre || !visor || !categoria || !coleccion || !archivo) {
-        resultEl.textContent = 'ID, nombre, visor, categoría, colección y archivo son obligatorios.';
+      if (!nombre || !coleccion || !archivo) {
+        resultEl.textContent = 'Nombre, colección y archivo son obligatorios.';
         resultEl.className = 'small error';
         return;
       }
+
+      // Generar item_id simple: DIRARC_SLUG + contador
+      let baseSlug = (currentDirArc.slug || 'dirarc').replace(/[^a-zA-Z0-9_]/g, '_');
+      if (!baseSlug) baseSlug = 'dirarc';
+      const count = dirarcItemsCache.length || 0;
+      const itemId = `${baseSlug}_${String(count + 1).padStart(3,'0')}`;
+
+      // Inferir visor, categoria, thumbnail
+      const meta = inferMetaFromUrl(archivo);
+      const resolvedUrl = normalizeDropboxUrl(archivo);
+      const source = resolvedUrl.startsWith('http') ? 'url' : 'local';
 
       let uiConfig = null;
       if (uiConfigRaw) {
         try {
           uiConfig = JSON.parse(uiConfigRaw);
-        } catch (e) {
-          resultEl.textContent = 'uiConfig no es JSON válido.';
+        } catch {
+          resultEl.textContent = 'uiConfig no es JSON válido (deja el campo vacío si no lo necesitas).';
           resultEl.className = 'small error';
           return;
         }
       }
 
-      const resolvedUrl = normalizeDropboxUrl(archivo);
-      const source = resolvedUrl.startsWith('http') ? 'url' : 'local';
-
       const { error } = await supabase.from('items').insert({
         dirarc_id: currentDirArc.id,
         item_id: itemId,
         nombre,
-        visor,
-        categoria,
+        visor: meta.visor,
+        categoria: meta.categoria,
         coleccion,
         source,
         archivo,
         resolved_url: resolvedUrl,
         descripcion,
-        tamano,
-        thumbnail,
+        tamano: null,
+        thumbnail: meta.thumbnail,
         ui_config: uiConfig
       });
 
@@ -553,13 +654,13 @@
       resultEl.textContent = 'Ítem creado correctamente en el DirArc.';
       resultEl.className = 'small ok';
 
-      document.getElementById('item-id').value = '';
       document.getElementById('item-nombre').value = '';
       document.getElementById('item-archivo').value = '';
-      document.getElementById('item-thumbnail').value = '';
       document.getElementById('item-descripcion').value = '';
-      document.getElementById('item-tamano').value = '';
       document.getElementById('item-ui-config').value = '';
+      // no tocamos la colección por si quiere repetir la misma
+
+      loadDirArcItems();
     };
 
     loadSession();
