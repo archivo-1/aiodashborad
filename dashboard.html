@@ -21,7 +21,7 @@
       border: 1px solid rgba(148,163,184,0.3);
       background: rgba(15,23,42,0.9);
     }
-    label { display:block; margin: .25rem 0; font-size:.85rem; }
+    label { display:block; margin: .35rem 0; font-size:.85rem; }
     input, textarea, select {
       width: 100%;
       padding: 0.35rem 0.5rem;
@@ -47,8 +47,8 @@
       border-color:rgba(148,163,184,0.7);
       margin-left:0.25rem;
     }
-    .row { display:flex; gap:0.75rem; }
-    .row > div { flex:1; }
+    .row { display:flex; gap:0.75rem; flex-wrap:wrap; }
+    .row > div { flex:1; min-width: 260px; }
     .small { font-size:0.8rem; color:#9ca3af; }
     .error { color:#fca5a5; font-size:0.8rem; margin-top:0.25rem; }
     .ok { color:#bbf7d0; font-size:0.8rem; margin-top:0.25rem; }
@@ -76,8 +76,8 @@
 <body>
   <h1>Aio Repo – DirArc Dashboard</h1>
   <p class="small">
-    Usa este panel para crear tu <strong>DirArc</strong> (Directorio Aio Repo de Colecciones) y añadir ítems
-    que Aio Repo podrá mostrar con sus visores.
+    Aquí administras tus <strong>DirArc</strong> (Directorios Aio Repo de Colecciones): conjuntos de archivos
+    organizados en colecciones que luego verás en Aio Repo con los visores.
   </p>
 
   <!-- Auth -->
@@ -86,6 +86,7 @@
     <div class="row">
       <div>
         <h3>Registro</h3>
+        <p class="small">Crea tu cuenta de host. Sólo necesitas email y contraseña.</p>
         <label>Email
           <input id="signup-email" type="email" placeholder="usuario@ejemplo.com" />
         </label>
@@ -97,6 +98,7 @@
       </div>
       <div>
         <h3>Login</h3>
+        <p class="small">Si ya tienes cuenta, inicia sesión para ver tus DirArc.</p>
         <label>Email
           <input id="login-email" type="email" />
         </label>
@@ -117,6 +119,10 @@
 
     <div style="margin-top:1rem;">
       <h3>Crear nuevo DirArc</h3>
+      <p class="small">
+        Un DirArc es un “content.json virtual” que agrupa tus archivos en colecciones.
+        Luego podrás compartir cada DirArc con tus clientes.
+      </p>
       <label>Slug (para URL, sin espacios)
         <input id="dirarc-slug" placeholder="casa-herrera-fase-2" />
       </label>
@@ -133,8 +139,7 @@
     <div style="margin-top:1.5rem;">
       <h3>DirArc existentes</h3>
       <p class="small">
-        Haz clic en un DirArc para seleccionarlo y luego podrás añadir ítems a ese DirArc
-        en la sección 3.
+        Haz clic en un DirArc para seleccionarlo y luego podrás añadirle ítems en la sección 3.
       </p>
       <ul id="dirarc-list" class="dirarc-list"></ul>
       <div id="dirarc-list-result" class="small"></div>
@@ -147,42 +152,91 @@
     <div class="small" id="current-dirarc-label">Ningún DirArc seleccionado.</div>
 
     <div style="margin-top:1rem;">
-      <label>ID (para Aio Repo, debe ser único dentro de tu DirArc)
+      <h3>Nuevo ítem</h3>
+      <p class="small">
+        Cada ítem corresponde a un archivo en tu propio almacenamiento (Dropbox, etc.) y a una
+        “cápsula” en Aio Repo. Más tarde Aio Repo lo mostrará con el visor adecuado.
+      </p>
+
+      <label>ID interno (para Aio Repo, único dentro de tu DirArc)
         <input id="item-id" placeholder="IFC_CLIENT01" />
+        <span class="small">Ejemplo: IFC_CLIENT01, PDF_MEMORIA01, VIDEO_VISITA01.</span>
       </label>
-      <label>Nombre
-        <input id="item-nombre" placeholder="Modelo IFC Cliente" />
+
+      <label>Nombre visible
+        <input id="item-nombre" placeholder="Modelo IFC – Cliente X" />
       </label>
-      <label>Visor (ifc, 3dm, media, map, dxf, etc.)
-        <input id="item-visor" placeholder="ifc" />
+
+      <label>Visor
+        <select id="item-visor">
+          <option value="">Selecciona un visor…</option>
+          <option value="media">media (PDF, imagen, vídeo, audio)</option>
+          <option value="ifc">ifc (modelo BIM .ifc)</option>
+          <option value="3dm">3dm (modelo Rhino .3dm)</option>
+          <option value="map">map (GeoJSON / mapa)</option>
+          <option value="dxf">dxf (planos .dxf)</option>
+          <option value="glb">glb (modelos .glb)</option>
+        </select>
       </label>
-      <label>Categoría (modelo-BIM, modelo-3d, pdf, video, etc.)
-        <input id="item-categoria" placeholder="modelo-BIM" />
+
+      <label>Categoría
+        <select id="item-categoria">
+          <option value="">Selecciona una categoría…</option>
+          <option value="modelo-BIM">Modelo BIM</option>
+          <option value="modelo-3d">Modelo 3D</option>
+          <option value="plano-2d">Plano 2D</option>
+          <option value="pdf">PDF</option>
+          <option value="imagen">Imagen</option>
+          <option value="video">Vídeo</option>
+          <option value="audio">Audio</option>
+          <option value="mapa">Mapa</option>
+          <option value="otro">Otro</option>
+        </select>
+        <span class="small">Esto se usa para agrupar en la galería (filtros por tipo).</span>
       </label>
-      <label>Colección (nombre visible dentro de Aio Repo)
+
+      <label>Colección (nombre visible dentro del DirArc)
         <input id="item-coleccion" placeholder="Casa Herrera – Fase 2" />
+        <span class="small">
+          Ejemplo: “Casa Herrera – Fase 2”, “Proyecto Concurso X”, “Portafolio Imágenes”.
+          Aio Repo agrupa por este nombre dentro del DirArc.
+        </span>
       </label>
-      <label>Archivo (URL de Dropbox u otra ruta accesible por HTTP)
+
+      <label>Archivo (URL pública)
         <input id="item-archivo" placeholder="https://www.dropbox.com/..." />
+        <span class="small">
+          Pega aquí el enlace compartido público de Dropbox (o cualquier URL accesible por HTTP).
+          El sistema intentará transformarlo a un enlace directo cuando sea posible.
+        </span>
       </label>
+
       <label>Thumbnail (opcional)
         <input id="item-thumbnail" placeholder="https://.../thumb.png" />
+        <span class="small">Pequeña imagen de portada para la galería (PNG/JPG).</span>
       </label>
+
       <label>Descripción (opcional)
-        <textarea id="item-descripcion" rows="2"></textarea>
+        <textarea id="item-descripcion" rows="2" placeholder="Breve descripción del archivo o del propósito."></textarea>
       </label>
+
       <label>Tamaño (texto opcional)
-        <input id="item-tamano" placeholder="2 MB" />
+        <input id="item-tamano" placeholder="2 MB, 450 MB, etc." />
       </label>
+
       <label>uiConfig (JSON opcional para visores 3D/BIM)
-        <textarea id="item-ui-config" rows="3" placeholder='{"cameraModes":["orbit"],"visualStyles":["rendered"]}'></textarea>
+        <textarea id="item-ui-config" rows="3"
+          placeholder='{"cameraModes":["orbit","ortho"],"visualStyles":["rendered","xray"]}'></textarea>
+        <span class="small">
+          Para usos avanzados: puedes definir modos de cámara y estilos visuales por ítem.
+        </span>
       </label>
 
       <button id="btn-add-item">Añadir ítem al DirArc</button>
       <div id="item-result" class="small"></div>
 
       <p class="small" style="margin-top:1rem;">
-        Endpoint global de contenido (todos tus DirArc mezclados por ahora, mientras no filtremos por usuario):
+        Endpoint global de contenido (todos los ítems, sin filtrar aún por usuario/DirArc):
         <br />
         <code>https://zihojlqhxfxdjahgrbwy.functions.supabase.co/all-content-json</code>
       </p>
@@ -192,18 +246,15 @@
   <script type="module">
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-    // === CONFIGURAR ESTO CON TUS DATOS ===
     const SUPABASE_URL = 'https://zihojlqhxfxdjahgrbwy.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_TZeZu-g4BDlcdXOfWpUG_Q_rN-Sur8t';
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Estado en memoria
     let currentUser = null;
     let currentDirArc = null;
     let dirarcsCache = [];
 
-    // Utilidades
     function normalizeDropboxUrl(original) {
       try {
         const url = new URL(original);
@@ -257,7 +308,7 @@
       setAuthUI(data.user || null);
     }
 
-    // === AUTH HANDLERS ===
+    // AUTH
     document.getElementById('btn-signup').onclick = async () => {
       const email = document.getElementById('signup-email').value.trim();
       const password = document.getElementById('signup-password').value.trim();
@@ -275,7 +326,7 @@
         resultEl.className = 'small error';
         return;
       }
-      resultEl.textContent = 'Registro iniciado. Revisa tu correo si se requiere confirmación.';
+      resultEl.textContent = 'Registro iniciado. Ahora puedes iniciar sesión.';
       resultEl.className = 'small ok';
     };
 
@@ -308,7 +359,7 @@
       document.getElementById('login-result').className = 'small ok';
     };
 
-    // === DIRARC HANDLERS ===
+    // DIRARC
     async function loadDirArcs() {
       const listEl = document.getElementById('dirarc-list');
       const resultEl = document.getElementById('dirarc-list-result');
@@ -339,10 +390,11 @@
 
       dirarcsCache.forEach(d => {
         const li = document.createElement('li');
-        li.textContent = d.title + '  (' + d.slug + ')';
+        li.textContent = `${d.title}  (${d.slug})`;
         li.onclick = () => {
           currentDirArc = d;
           renderDirArcList();
+          renderCurrentDirArcLabel();
         };
         if (currentDirArc && currentDirArc.id === d.id) {
           li.classList.add('active');
@@ -364,7 +416,7 @@
 
       dirarcsCache.forEach(d => {
         const li = document.createElement('li');
-        li.textContent = d.title + '  (' + d.slug + ')';
+        li.textContent = `${d.title}  (${d.slug})`;
         li.onclick = () => {
           currentDirArc = d;
           renderDirArcList();
@@ -434,7 +486,7 @@
       renderCurrentDirArcLabel();
     };
 
-    // === ITEM HANDLER ===
+    // ITEMS
     document.getElementById('btn-add-item').onclick = async () => {
       const resultEl = document.getElementById('item-result');
 
@@ -501,7 +553,6 @@
       resultEl.textContent = 'Ítem creado correctamente en el DirArc.';
       resultEl.className = 'small ok';
 
-      // limpiar algunos campos
       document.getElementById('item-id').value = '';
       document.getElementById('item-nombre').value = '';
       document.getElementById('item-archivo').value = '';
@@ -511,7 +562,6 @@
       document.getElementById('item-ui-config').value = '';
     };
 
-    // Al cargar la página, intentar recuperar sesión
     loadSession();
   </script>
 </body>
