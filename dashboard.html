@@ -212,526 +212,527 @@
   </section>
 
   <script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-    const SUPABASE_URL = 'https://zihojlqhxfxdjahgrbwy.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_TZeZu-g4BDlcdXOfWpUG_Q_rN-Sur8t';
+  const SUPABASE_URL = 'https://zihojlqhxfxdjahgrbwy.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_TZeZu-g4BDlcdXOfWpUG_Q_rN-Sur8t';
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    let currentUser = null;
-    let currentDirArc = null;
-    let dirarcsCache = [];
-    let dirarcItemsCache = [];
+  let currentUser = null;
+  let currentDirArc = null;
+  let dirarcsCache = [];
+  let dirarcItemsCache = [];
 
-    function normalizeExternalUrl(original) {
-  try {
-    const url = new URL(original);
+  function normalizeExternalUrl(original) {
+    try {
+      const url = new URL(original);
 
-    // --- Dropbox ---
-    if (url.hostname.includes('dropbox.com')) {
-      // Pasar a dominio de contenido directo.[web:239]
-      url.hostname = 'dl.dropboxusercontent.com';
-
-      // Forzar modo archivo crudo.
-      url.searchParams.set('raw', '1');
-      url.searchParams.delete('dl');
-      return url.toString();
-    }
-
-    // --- Google Drive ---
-    if (url.hostname.includes('drive.google.com')) {
-      const m = url.pathname.match(/\/file\/d\/([^/]+)\/view/);
-      if (m && m[1]) {
-        const fileId = m[1];
-        return `https://drive.google.com/uc?export=download&id=${fileId}`;[web:161][web:181]
-      }
-      if (url.pathname.startsWith('/uc')) {
-        url.searchParams.set('export', 'download');
+      // --- Dropbox ---
+      if (url.hostname.includes('dropbox.com')) {
+        // Pasar a dominio de contenido directo
+        url.hostname = 'dl.dropboxusercontent.com';
+        // Forzar modo archivo crudo
+        url.searchParams.set('raw', '1');
+        url.searchParams.delete('dl');
         return url.toString();
       }
+
+      // --- Google Drive ---
+      if (url.hostname.includes('drive.google.com')) {
+        // https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+        const m = url.pathname.match(/\/file\/d\/([^/]+)\/view/);
+        if (m && m[1]) {
+          const fileId = m[1];
+          return `https://drive.google.com/uc?export=download&id=${fileId}`;
+        }
+        if (url.pathname.startsWith('/uc')) {
+          url.searchParams.set('export', 'download');
+          return url.toString();
+        }
+        return original;
+      }
+
+      return original;
+    } catch {
       return original;
     }
+  }
 
-    return original;
-  } catch {
-    return original;
-  }
-}
+  function inferMetaFromUrl(url) {
+    const safe = (url || '').split('#')[0].split('?')[0];
+    const lower = safe.toLowerCase();
 
-    function inferMetaFromUrl(url) {
-  const safe = (url || '').split('#')[0].split('?')[0]; // quita query y fragmentos[web:202][web:209]
-  const lower = safe.toLowerCase();
-
-  if (lower.endsWith('.pdf')) {
-    return { visor: 'media', categoria: 'pdf', thumbnail: 'thumbnails/gt_pdf.png' };
-  }
-  if (lower.endsWith('.ifc')) {
-    return { visor: 'ifc', categoria: 'modelo-BIM', thumbnail: 'thumbnails/gt_ifc.png' };
-  }
-  if (lower.endsWith('.3dm')) {
-    return { visor: '3dm', categoria: 'modelo-3d', thumbnail: 'thumbnails/gt_3dm.png' };
-  }
-  if (lower.endsWith('.dxf')) {
-    return { visor: 'dxf', categoria: 'plano-2d', thumbnail: 'thumbnails/gt_dxf.png' };
-  }
-  if (lower.endsWith('.glb')) {
-    return { visor: 'glb', categoria: 'modelo-3d', thumbnail: 'thumbnails/gt_glb.png' };
-  }
-  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png') || lower.endsWith('.webp')) {
-    return { visor: 'media', categoria: 'imagen', thumbnail: 'thumbnails/gt_img.png' };
-  }
-  if (lower.endsWith('.mp4') || lower.endsWith('.webm')) {
-    return { visor: 'media', categoria: 'video', thumbnail: 'thumbnails/gt_mp4.png' };
-  }
-  if (lower.endsWith('.mp3') || lower.endsWith('.wav')) {
-    return { visor: 'media', categoria: 'audio', thumbnail: 'thumbnails/gt_audio.png' };
-  }
-  if (lower.endsWith('.geojson') || lower.endsWith('.json')) {
-    return { visor: 'map', categoria: 'mapa', thumbnail: 'thumbnails/gt_map.png' };
-  }
-  return { visor: 'media', categoria: 'otro', thumbnail: 'thumbnails/gt_0.png' };
-}
-    function resetDirArcUI() {
-      currentDirArc = null;
-      dirarcsCache = [];
-      dirarcItemsCache = [];
-      const itemsView = document.getElementById('dirarc-items-view');
-      const label = document.getElementById('current-dirarc-label');
-      const collSelect = document.getElementById('item-coleccion-select');
-      const collInput = document.getElementById('item-coleccion-input');
-
-      if (itemsView) itemsView.innerHTML = '';
-      if (label) label.textContent = 'Ningún DirArc seleccionado.';
-      if (collSelect) {
-        collSelect.innerHTML = '';
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = 'Escribe una nueva colección…';
-        collSelect.appendChild(opt);
-      }
-      if (collInput) collInput.value = '';
+    if (lower.endsWith('.pdf')) {
+      return { visor: 'media', categoria: 'pdf', thumbnail: 'thumbnails/gt_pdf.png' };
     }
-
-    function setAuthUI(user) {
-      const authSection = document.getElementById('auth-section');
-      const dirarcSection = document.getElementById('dirarc-section');
-      const itemsSection = document.getElementById('items-section');
-      const btnLogout = document.getElementById('btn-logout');
-      const userInfo = document.getElementById('user-info');
-
-      currentUser = user;
-
-      if (!user) {
-        authSection.style.display = '';
-        dirarcSection.style.display = 'none';
-        itemsSection.style.display = 'none';
-        btnLogout.style.display = 'none';
-        userInfo.textContent = '';
-        resetDirArcUI();
-      } else {
-        authSection.style.display = '';
-        dirarcSection.style.display = '';
-        itemsSection.style.display = '';
-        btnLogout.style.display = '';
-        userInfo.textContent = `Usuario: ${user.email || user.id}`;
-        resetDirArcUI();
-        loadDirArcs();
-      }
+    if (lower.endsWith('.ifc')) {
+      return { visor: 'ifc', categoria: 'modelo-BIM', thumbnail: 'thumbnails/gt_ifc.png' };
     }
-
-    async function loadSession() {
-      const { data, error } = await supabase.auth.getUser();
-      if (error) {
-        console.warn('Error obteniendo usuario:', error.message);
-        setAuthUI(null);
-        return;
-      }
-      setAuthUI(data.user || null);
+    if (lower.endsWith('.3dm')) {
+      return { visor: '3dm', categoria: 'modelo-3d', thumbnail: 'thumbnails/gt_3dm.png' };
     }
-
-    // Auth
-    document.getElementById('btn-signup').onclick = async () => {
-      const email = document.getElementById('signup-email').value.trim();
-      const password = document.getElementById('signup-password').value.trim();
-      const resultEl = document.getElementById('signup-result');
-
-      if (!email || !password) {
-        resultEl.textContent = 'Email y contraseña son obligatorios.';
-        resultEl.className = 'small error';
-        return;
-      }
-
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) {
-        resultEl.textContent = 'Error al registrar: ' + error.message;
-        resultEl.className = 'small error';
-        return;
-      }
-      resultEl.textContent = 'Registro iniciado. Ahora puedes iniciar sesión.';
-      resultEl.className = 'small ok';
-    };
-
-    document.getElementById('btn-login').onclick = async () => {
-      const email = document.getElementById('login-email').value.trim();
-      const password = document.getElementById('login-password').value.trim();
-      const resultEl = document.getElementById('login-result');
-
-      if (!email || !password) {
-        resultEl.textContent = 'Email y contraseña son obligatorios.';
-        resultEl.className = 'small error';
-        return;
-      }
-
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        resultEl.textContent = 'Error al iniciar sesión: ' + error.message;
-        resultEl.className = 'small error';
-        return;
-      }
-      resultEl.textContent = 'Sesión iniciada.';
-      resultEl.className = 'small ok';
-      setAuthUI(data.user);
-    };
-
-    document.getElementById('btn-logout').onclick = async () => {
-      await supabase.auth.signOut();
-      setAuthUI(null);
-      document.getElementById('login-result').textContent = 'Sesión cerrada.';
-      document.getElementById('login-result').className = 'small ok';
-    };
-
-    // DirArcs
-    async function loadDirArcs() {
-      const listEl = document.getElementById('dirarc-list');
-      const resultEl = document.getElementById('dirarc-list-result');
-      listEl.innerHTML = '';
-      resultEl.textContent = '';
-
-      if (!currentUser) return;
-
-      const { data, error } = await supabase
-        .from('dirarcs')
-        .select('*')
-        .eq('owner_user_id', currentUser.id)
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error(error);
-        resultEl.textContent = 'Error cargando DirArc: ' + error.message;
-        resultEl.className = 'small error';
-        return;
-      }
-
-      dirarcsCache = data || [];
-
-      if (!dirarcsCache.length) {
-        listEl.innerHTML = '<li class="small">No tienes ningún DirArc todavía.</li>';
-        resetDirArcUI();
-        const itemsView = document.getElementById('dirarc-items-view');
-        if (itemsView) itemsView.textContent = 'Este DirArc no tiene ítems todavía.';
-        return;
-      }
-
-      dirarcsCache.forEach(d => {
-        const li = document.createElement('li');
-        li.textContent = `${d.title}  (${d.slug})`;
-        li.onclick = () => {
-          currentDirArc = d;
-          renderDirArcList();
-          renderCurrentDirArcLabel();
-          loadDirArcItems();
-        };
-        if (currentDirArc && currentDirArc.id === d.id) {
-          li.classList.add('active');
-        }
-        listEl.appendChild(li);
-      });
-
-      renderCurrentDirArcLabel();
-      if (!currentDirArc && dirarcsCache.length > 0) {
-        currentDirArc = dirarcsCache[0];
-        renderDirArcList();
-        renderCurrentDirArcLabel();
-        loadDirArcItems();
-      }
+    if (lower.endsWith('.dxf')) {
+      return { visor: 'dxf', categoria: 'plano-2d', thumbnail: 'thumbnails/gt_dxf.png' };
     }
-
-    function renderDirArcList() {
-      const listEl = document.getElementById('dirarc-list');
-      listEl.innerHTML = '';
-
-      if (!dirarcsCache.length) {
-        listEl.innerHTML = '<li class="small">No tienes ningún DirArc todavía.</li>';
-        return;
-      }
-
-      dirarcsCache.forEach(d => {
-        const li = document.createElement('li');
-        li.textContent = `${d.title}  (${d.slug})`;
-        li.onclick = () => {
-          currentDirArc = d;
-          renderDirArcList();
-          renderCurrentDirArcLabel();
-          loadDirArcItems();
-        };
-        if (currentDirArc && currentDirArc.id === d.id) {
-          li.classList.add('active');
-        }
-        listEl.appendChild(li);
-      });
+    if (lower.endsWith('.glb')) {
+      return { visor: 'glb', categoria: 'modelo-3d', thumbnail: 'thumbnails/gt_glb.png' };
     }
-
-    function renderCurrentDirArcLabel() {
-      const label = document.getElementById('current-dirarc-label');
-      if (!currentDirArc) {
-        label.textContent = 'Ningún DirArc seleccionado.';
-      } else {
-        label.textContent = `DirArc activo: ${currentDirArc.title} (slug: ${currentDirArc.slug})`;
-      }
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png') || lower.endsWith('.webp')) {
+      return { visor: 'media', categoria: 'imagen', thumbnail: 'thumbnails/gt_img.png' };
     }
+    if (lower.endsWith('.mp4') || lower.endsWith('.webm')) {
+      return { visor: 'media', categoria: 'video', thumbnail: 'thumbnails/gt_mp4.png' };
+    }
+    if (lower.endsWith('.mp3') || lower.endsWith('.wav')) {
+      return { visor: 'media', categoria: 'audio', thumbnail: 'thumbnails/gt_audio.png' };
+    }
+    if (lower.endsWith('.geojson') || lower.endsWith('.json')) {
+      return { visor: 'map', categoria: 'mapa', thumbnail: 'thumbnails/gt_map.png' };
+    }
+    return { visor: 'media', categoria: 'otro', thumbnail: 'thumbnails/gt_0.png' };
+  }
 
-    document.getElementById('btn-create-dirarc').onclick = async () => {
-      const slug = document.getElementById('dirarc-slug').value.trim();
-      const title = document.getElementById('dirarc-title').value.trim();
-      const description = document.getElementById('dirarc-desc').value.trim();
-      const resultEl = document.getElementById('dirarc-create-result');
+  function resetDirArcUI() {
+    currentDirArc = null;
+    dirarcsCache = [];
+    dirarcItemsCache = [];
+    const itemsView = document.getElementById('dirarc-items-view');
+    const label = document.getElementById('current-dirarc-label');
+    const collSelect = document.getElementById('item-coleccion-select');
+    const collInput = document.getElementById('item-coleccion-input');
 
-      if (!currentUser) {
-        resultEl.textContent = 'Debes iniciar sesión primero.';
-        resultEl.className = 'small error';
-        return;
-      }
-      if (!slug || !title) {
-        resultEl.textContent = 'Slug y título son obligatorios.';
-        resultEl.className = 'small error';
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('dirarcs')
-        .insert({
-          owner_user_id: currentUser.id,
-          slug,
-          title,
-          description,
-          public: false
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error(error);
-        resultEl.textContent = 'Error creando DirArc: ' + error.message;
-        resultEl.className = 'small error';
-        return;
-      }
-
-      resultEl.textContent = 'DirArc creado.';
-      resultEl.className = 'small ok';
-
-      document.getElementById('dirarc-slug').value = '';
-      document.getElementById('dirarc-title').value = '';
-      document.getElementById('dirarc-desc').value = '';
-
-      currentDirArc = data;
-      await loadDirArcs();
-      renderCurrentDirArcLabel();
-      loadDirArcItems();
-    };
-
-    // Items: vista explorador
-    async function loadDirArcItems() {
-      const viewEl = document.getElementById('dirarc-items-view');
-      const collSelect = document.getElementById('item-coleccion-select');
-      viewEl.innerHTML = '';
-      dirarcItemsCache = [];
+    if (itemsView) itemsView.innerHTML = '';
+    if (label) label.textContent = 'Ningún DirArc seleccionado.';
+    if (collSelect) {
       collSelect.innerHTML = '';
       const opt = document.createElement('option');
       opt.value = '';
       opt.textContent = 'Escribe una nueva colección…';
       collSelect.appendChild(opt);
+    }
+    if (collInput) collInput.value = '';
+  }
 
-      if (!currentDirArc) {
-        viewEl.textContent = 'Selecciona un DirArc para ver sus ítems.';
-        return;
-      }
+  function setAuthUI(user) {
+    const authSection = document.getElementById('auth-section');
+    const dirarcSection = document.getElementById('dirarc-section');
+    const itemsSection = document.getElementById('items-section');
+    const btnLogout = document.getElementById('btn-logout');
+    const userInfo = document.getElementById('user-info');
 
-      const { data, error } = await supabase
-        .from('items')
-        .select('*')
-        .eq('dirarc_id', currentDirArc.id)
-        .order('coleccion', { ascending: true })
-        .order('created_at', { ascending: true });
+    currentUser = user;
 
-      if (error) {
-        console.error(error);
-        viewEl.textContent = 'Error cargando ítems del DirArc: ' + error.message;
-        return;
-      }
+    if (!user) {
+      authSection.style.display = '';
+      dirarcSection.style.display = 'none';
+      itemsSection.style.display = 'none';
+      btnLogout.style.display = 'none';
+      userInfo.textContent = '';
+      resetDirArcUI();
+    } else {
+      authSection.style.display = '';
+      dirarcSection.style.display = '';
+      itemsSection.style.display = '';
+      btnLogout.style.display = '';
+      userInfo.textContent = `Usuario: ${user.email || user.id}`;
+      resetDirArcUI();
+      loadDirArcs();
+    }
+  }
 
-      dirarcItemsCache = data || [];
-
-      if (!dirarcItemsCache.length) {
-        viewEl.textContent = 'Este DirArc no tiene ítems todavía.';
-        return;
-      }
-
-      const groups = {};
-      dirarcItemsCache.forEach(it => {
-        const key = it.coleccion || '(sin colección)';
-        if (!groups[key]) groups[key] = [];
-        groups[key].push(it);
-      });
-
-      const keys = Object.keys(groups).sort((a,b) => a.localeCompare(b));
-
-      keys.forEach(coll => {
-        if (coll !== '(sin colección)') {
-          const o = document.createElement('option');
-          o.value = coll;
-          o.textContent = coll;
-          collSelect.appendChild(o);
-        }
-
-        const groupDiv = document.createElement('div');
-        groupDiv.className = 'items-group';
-        const title = document.createElement('div');
-        title.className = 'items-group-title';
-        title.textContent = `Colección: ${coll}`;
-        groupDiv.appendChild(title);
-
-        groups[coll].forEach(it => {
-  const line = document.createElement('div');
-  line.className = 'items-group-item';
-
-  const label = document.createElement('span');
-  label.textContent = `• ${it.item_id} — ${it.nombre}  [visor: ${it.visor}, categoria: ${it.categoria}]`;
-
-  const btn = document.createElement('button');
-  btn.textContent = 'Borrar';
-  btn.className = 'secondary';
-  btn.style.marginLeft = '0.5rem';
-
-  btn.onclick = async (e) => {
-    e.stopPropagation();
-    const ok = confirm(`¿Borrar el ítem ${it.item_id}?`);
-    if (!ok) return;
-
-    const { error } = await supabase
-      .from('items')
-      .delete()
-      .eq('item_id', it.item_id); // borramos por item_id[web:211][web:212]
-
+  async function loadSession() {
+    const { data, error } = await supabase.auth.getUser();
     if (error) {
-      console.error(error);
-      alert('Error borrando ítem: ' + error.message);
+      console.warn('Error obteniendo usuario:', error.message);
+      setAuthUI(null);
+      return;
+    }
+    setAuthUI(data.user || null);
+  }
+
+  // Auth
+  document.getElementById('btn-signup').onclick = async () => {
+    const email = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value.trim();
+    const resultEl = document.getElementById('signup-result');
+
+    if (!email || !password) {
+      resultEl.textContent = 'Email y contraseña son obligatorios.';
+      resultEl.className = 'small error';
       return;
     }
 
-    await loadDirArcItems(); // recarga la lista después de borrar
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      resultEl.textContent = 'Error al registrar: ' + error.message;
+      resultEl.className = 'small error';
+      return;
+    }
+    resultEl.textContent = 'Registro iniciado. Ahora puedes iniciar sesión.';
+    resultEl.className = 'small ok';
   };
 
-  line.appendChild(label);
-  line.appendChild(btn);
-  groupDiv.appendChild(line);
-});
+  document.getElementById('btn-login').onclick = async () => {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+    const resultEl = document.getElementById('login-result');
 
-
-        viewEl.appendChild(groupDiv);
-      });
+    if (!email || !password) {
+      resultEl.textContent = 'Email y contraseña son obligatorios.';
+      resultEl.className = 'small error';
+      return;
     }
 
-    // Items: selección de colección (dropdown + texto)
-    const collSelectEl = document.getElementById('item-coleccion-select');
-    const collInputEl = document.getElementById('item-coleccion-input');
-    collSelectEl.addEventListener('change', () => {
-      const val = collSelectEl.value;
-      if (val) {
-        collInputEl.value = val;
-      } else {
-        collInputEl.value = '';
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      resultEl.textContent = 'Error al iniciar sesión: ' + error.message;
+      resultEl.className = 'small error';
+      return;
+    }
+    resultEl.textContent = 'Sesión iniciada.';
+    resultEl.className = 'small ok';
+    setAuthUI(data.user);
+  };
+
+  document.getElementById('btn-logout').onclick = async () => {
+    await supabase.auth.signOut();
+    setAuthUI(null);
+    document.getElementById('login-result').textContent = 'Sesión cerrada.';
+    document.getElementById('login-result').className = 'small ok';
+  };
+
+  // DirArcs
+  async function loadDirArcs() {
+    const listEl = document.getElementById('dirarc-list');
+    const resultEl = document.getElementById('dirarc-list-result');
+    listEl.innerHTML = '';
+    resultEl.textContent = '';
+
+    if (!currentUser) return;
+
+    const { data, error } = await supabase
+      .from('dirarcs')
+      .select('*')
+      .eq('owner_user_id', currentUser.id)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error(error);
+      resultEl.textContent = 'Error cargando DirArc: ' + error.message;
+      resultEl.className = 'small error';
+      return;
+    }
+
+    dirarcsCache = data || [];
+
+    if (!dirarcsCache.length) {
+      listEl.innerHTML = '<li class="small">No tienes ningún DirArc todavía.</li>';
+      resetDirArcUI();
+      const itemsView = document.getElementById('dirarc-items-view');
+      if (itemsView) itemsView.textContent = 'Este DirArc no tiene ítems todavía.';
+      return;
+    }
+
+    dirarcsCache.forEach(d => {
+      const li = document.createElement('li');
+      li.textContent = `${d.title}  (${d.slug})`;
+      li.onclick = () => {
+        currentDirArc = d;
+        renderDirArcList();
+        renderCurrentDirArcLabel();
+        loadDirArcItems();
+      };
+      if (currentDirArc && currentDirArc.id === d.id) {
+        li.classList.add('active');
       }
+      listEl.appendChild(li);
     });
 
-    // Items: insertar con ID autogenerado e inferencias
-    document.getElementById('btn-add-item').onclick = async () => {
-      const resultEl = document.getElementById('item-result');
+    renderCurrentDirArcLabel();
+    if (!currentDirArc && dirarcsCache.length > 0) {
+      currentDirArc = dirarcsCache[0];
+      renderDirArcList();
+      renderCurrentDirArcLabel();
+      loadDirArcItems();
+    }
+  }
 
-      if (!currentUser || !currentDirArc) {
-        resultEl.textContent = 'Debes iniciar sesión y seleccionar un DirArc primero.';
-        resultEl.className = 'small error';
-        return;
+  function renderDirArcList() {
+    const listEl = document.getElementById('dirarc-list');
+    listEl.innerHTML = '';
+
+    if (!dirarcsCache.length) {
+      listEl.innerHTML = '<li class="small">No tienes ningún DirArc todavía.</li>';
+      return;
+    }
+
+    dirarcsCache.forEach(d => {
+      const li = document.createElement('li');
+      li.textContent = `${d.title}  (${d.slug})`;
+      li.onclick = () => {
+        currentDirArc = d;
+        renderDirArcList();
+        renderCurrentDirArcLabel();
+        loadDirArcItems();
+      };
+      if (currentDirArc && currentDirArc.id === d.id) {
+        li.classList.add('active');
+      }
+      listEl.appendChild(li);
+    });
+  }
+
+  function renderCurrentDirArcLabel() {
+    const label = document.getElementById('current-dirarc-label');
+    if (!currentDirArc) {
+      label.textContent = 'Ningún DirArc seleccionado.';
+    } else {
+      label.textContent = `DirArc activo: ${currentDirArc.title} (slug: ${currentDirArc.slug})`;
+    }
+  }
+
+  document.getElementById('btn-create-dirarc').onclick = async () => {
+    const slug = document.getElementById('dirarc-slug').value.trim();
+    const title = document.getElementById('dirarc-title').value.trim();
+    const description = document.getElementById('dirarc-desc').value.trim();
+    const resultEl = document.getElementById('dirarc-create-result');
+
+    if (!currentUser) {
+      resultEl.textContent = 'Debes iniciar sesión primero.';
+      resultEl.className = 'small error';
+      return;
+    }
+    if (!slug || !title) {
+      resultEl.textContent = 'Slug y título son obligatorios.';
+      resultEl.className = 'small error';
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('dirarcs')
+      .insert({
+        owner_user_id: currentUser.id,
+        slug,
+        title,
+        description,
+        public: false
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error(error);
+      resultEl.textContent = 'Error creando DirArc: ' + error.message;
+      resultEl.className = 'small error';
+      return;
+    }
+
+    resultEl.textContent = 'DirArc creado.';
+    resultEl.className = 'small ok';
+
+    document.getElementById('dirarc-slug').value = '';
+    document.getElementById('dirarc-title').value = '';
+    document.getElementById('dirarc-desc').value = '';
+
+    currentDirArc = data;
+    await loadDirArcs();
+    renderCurrentDirArcLabel();
+    loadDirArcItems();
+  };
+
+  // Items: vista explorador
+  async function loadDirArcItems() {
+    const viewEl = document.getElementById('dirarc-items-view');
+    const collSelect = document.getElementById('item-coleccion-select');
+    viewEl.innerHTML = '';
+    dirarcItemsCache = [];
+    collSelect.innerHTML = '';
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'Escribe una nueva colección…';
+    collSelect.appendChild(opt);
+
+    if (!currentDirArc) {
+      viewEl.textContent = 'Selecciona un DirArc para ver sus ítems.';
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('items')
+      .select('*')
+      .eq('dirarc_id', currentDirArc.id)
+      .order('coleccion', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error(error);
+      viewEl.textContent = 'Error cargando ítems del DirArc: ' + error.message;
+      return;
+    }
+
+    dirarcItemsCache = data || [];
+
+    if (!dirarcItemsCache.length) {
+      viewEl.textContent = 'Este DirArc no tiene ítems todavía.';
+      return;
+    }
+
+    const groups = {};
+    dirarcItemsCache.forEach(it => {
+      const key = it.coleccion || '(sin colección)';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(it);
+    });
+
+    const keys = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+
+    keys.forEach(coll => {
+      if (coll !== '(sin colección)') {
+        const o = document.createElement('option');
+        o.value = coll;
+        o.textContent = coll;
+        collSelect.appendChild(o);
       }
 
-      const nombre = document.getElementById('item-nombre').value.trim();
-      const coleccion = document.getElementById('item-coleccion-input').value.trim();
-      const archivo = document.getElementById('item-archivo').value.trim();
-      const descripcion = document.getElementById('item-descripcion').value.trim();
-      const uiConfigRaw = document.getElementById('item-ui-config').value.trim();
+      const groupDiv = document.createElement('div');
+      groupDiv.className = 'items-group';
+      const title = document.createElement('div');
+      title.className = 'items-group-title';
+      title.textContent = `Colección: ${coll}`;
+      groupDiv.appendChild(title);
 
-      if (!nombre || !coleccion || !archivo) {
-        resultEl.textContent = 'Nombre, colección y archivo son obligatorios.';
-        resultEl.className = 'small error';
-        return;
-      }
+      groups[coll].forEach(it => {
+        const line = document.createElement('div');
+        line.className = 'items-group-item';
 
-      let baseSlug = (currentDirArc.slug || 'dirarc').replace(/[^a-zA-Z0-9_]/g, '_');
-      if (!baseSlug) baseSlug = 'dirarc';
-      const count = dirarcItemsCache.length || 0;
-      const itemId = `${baseSlug}_${String(count + 1).padStart(3,'0')}`;
+        const label = document.createElement('span');
+        label.textContent = `• ${it.item_id} — ${it.nombre}  [visor: ${it.visor}, categoria: ${it.categoria}]`;
 
-      const meta = inferMetaFromUrl(archivo);
-      const resolvedUrl = normalizeExternalUrl(archivo);
-      const source = resolvedUrl.startsWith('http') ? 'url' : 'local';
+        const btn = document.createElement('button');
+        btn.textContent = 'Borrar';
+        btn.className = 'secondary';
+        btn.style.marginLeft = '0.5rem';
 
-      let uiConfig = null;
-      if (uiConfigRaw) {
-        try {
-          uiConfig = JSON.parse(uiConfigRaw);
-        } catch {
-          resultEl.textContent = 'uiConfig no es JSON válido (deja el campo vacío si no lo necesitas).';
-          resultEl.className = 'small error';
-          return;
-        }
-      }
+        btn.onclick = async (e) => {
+          e.stopPropagation();
+          const ok = confirm(`¿Borrar el ítem ${it.item_id}?`);
+          if (!ok) return;
 
-      const { error } = await supabase.from('items').insert({
-        dirarc_id: currentDirArc.id,
-        item_id: itemId,
-        nombre,
-        visor: meta.visor,
-        categoria: meta.categoria,
-        coleccion,
-        source,
-        archivo,
-        resolved_url: resolvedUrl,
-        descripcion,
-        tamano: null,
-        thumbnail: meta.thumbnail,
-        ui_config: uiConfig
+          const { error } = await supabase
+            .from('items')
+            .delete()
+            .eq('item_id', it.item_id);
+
+          if (error) {
+            console.error(error);
+            alert('Error borrando ítem: ' + error.message);
+            return;
+          }
+
+          await loadDirArcItems();
+        };
+
+        line.appendChild(label);
+        line.appendChild(btn);
+        groupDiv.appendChild(line);
       });
 
-      if (error) {
-        console.error(error);
-        resultEl.textContent = 'Error insertando ítem: ' + error.message;
+      viewEl.appendChild(groupDiv);
+    });
+  }
+
+  // Items: selección de colección (dropdown + texto)
+  const collSelectEl = document.getElementById('item-coleccion-select');
+  const collInputEl = document.getElementById('item-coleccion-input');
+  collSelectEl.addEventListener('change', () => {
+    const val = collSelectEl.value;
+    if (val) {
+      collInputEl.value = val;
+    } else {
+      collInputEl.value = '';
+    }
+  });
+
+  // Items: insertar con ID autogenerado e inferencias
+  document.getElementById('btn-add-item').onclick = async () => {
+    const resultEl = document.getElementById('item-result');
+
+    if (!currentUser || !currentDirArc) {
+      resultEl.textContent = 'Debes iniciar sesión y seleccionar un DirArc primero.';
+      resultEl.className = 'small error';
+      return;
+    }
+
+    const nombre = document.getElementById('item-nombre').value.trim();
+    const coleccion = document.getElementById('item-coleccion-input').value.trim();
+    const archivo = document.getElementById('item-archivo').value.trim();
+    const descripcion = document.getElementById('item-descripcion').value.trim();
+    const uiConfigRaw = document.getElementById('item-ui-config').value.trim();
+
+    if (!nombre || !coleccion || !archivo) {
+      resultEl.textContent = 'Nombre, colección y archivo son obligatorios.';
+      resultEl.className = 'small error';
+      return;
+    }
+
+    let baseSlug = (currentDirArc.slug || 'dirarc').replace(/[^a-zA-Z0-9_]/g, '_');
+    if (!baseSlug) baseSlug = 'dirarc';
+    const count = dirarcItemsCache.length || 0;
+    const itemId = `${baseSlug}_${String(count + 1).padStart(3, '0')}`;
+
+    const meta = inferMetaFromUrl(archivo);
+    const resolvedUrl = normalizeExternalUrl(archivo);
+    const source = resolvedUrl.startsWith('http') ? 'url' : 'local';
+
+    let uiConfig = null;
+    if (uiConfigRaw) {
+      try {
+        uiConfig = JSON.parse(uiConfigRaw);
+      } catch {
+        resultEl.textContent = 'uiConfig no es JSON válido (deja el campo vacío si no lo necesitas).';
         resultEl.className = 'small error';
         return;
       }
+    }
 
-      resultEl.textContent = 'Ítem creado correctamente en el DirArc.';
-      resultEl.className = 'small ok';
+    const { error } = await supabase.from('items').insert({
+      dirarc_id: currentDirArc.id,
+      item_id: itemId,
+      nombre,
+      visor: meta.visor,
+      categoria: meta.categoria,
+      coleccion,
+      source,
+      archivo,
+      resolved_url: resolvedUrl,
+      descripcion,
+      tamano: null,
+      thumbnail: meta.thumbnail,
+      ui_config: uiConfig
+    });
 
-      document.getElementById('item-nombre').value = '';
-      document.getElementById('item-archivo').value = '';
-      document.getElementById('item-descripcion').value = '';
-      document.getElementById('item-ui-config').value = '';
+    if (error) {
+      console.error(error);
+      resultEl.textContent = 'Error insertando ítem: ' + error.message;
+      resultEl.className = 'small error';
+      return;
+    }
 
-      loadDirArcItems();
-    };
+    resultEl.textContent = 'Ítem creado correctamente en el DirArc.';
+    resultEl.className = 'small ok';
 
-    loadSession();
-  </script>
+    document.getElementById('item-nombre').value = '';
+    document.getElementById('item-archivo').value = '';
+    document.getElementById('item-descripcion').value = '';
+    document.getElementById('item-ui-config').value = '';
+
+    loadDirArcItems();
+  };
+
+  loadSession();
+</script>
+
 </body>
 </html>
 
