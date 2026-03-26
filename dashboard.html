@@ -454,6 +454,66 @@
         justify-content:flex-end;
       }
     }
+    /* --- INICIO: Correcciones exclusivas para móviles (< 600px) --- */
+    @media (max-width: 600px) {
+      /* 1. Ajustes del Header para evitar que el título se desborde */
+      header {
+        padding: 0 0.5rem;
+        gap: 0.5rem;
+      }
+      .header-title {
+        min-width: 0; /* Clave para que el text-overflow funcione dentro de un contenedor flex */
+        flex: 1;
+      }
+      .header-title h1, .header-title span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .header-title h1 {
+        font-size: 0.9rem;
+      }
+      .header-title span {
+        font-size: 0.65rem;
+      }
+      .badge-user {
+        max-width: 90px; /* Acorta el correo del usuario si es muy largo */
+        padding: 0.15rem 0.35rem;
+      }
+
+      /* 2. Ajustes de Paneles Laterales para evitar scroll horizontal */
+      .side-panel {
+        width: 100%; /* Aprovecha todo el ancho disponible */
+        padding: 0.75rem;
+      }
+      .side-panel-body * {
+        word-break: break-word; /* Obliga a que URLs o textos sin espacios bajen de línea */
+      }
+      #type-preview {
+        word-break: break-all;
+      }
+
+      /* 3. Ajustes de la sección Auth (Login/Registro) */
+      .row > div {
+        min-width: 100%; /* Evita que las cajas se salgan de la pantalla si miden menos de 260px */
+      }
+
+      /* 4. Ajustes del buscador de contenedores */
+      #items-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      #items-header-right {
+        width: 100%;
+        justify-content: space-between;
+        margin-top: 0.5rem;
+      }
+      #items-search {
+        flex: 1;
+        min-width: 0;
+      }
+    }
+    /* --- FIN: Correcciones exclusivas para móviles --- */
   </style>
 </head>
 <body>
