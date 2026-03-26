@@ -859,31 +859,47 @@
   }
 
   function classifyUrlForMedia(originalUrl, useIframeFlag) {
-    const url = (originalUrl || '').trim();
+  const url = (originalUrl || '').trim();
 
-    if (isYoutube(url) || isVimeo(url)) {
-      return {
-        visor: 'media',
-        categoria: 'yt/vm',
-        thumbnail: 'thumbnails/gt_mp4.png',
-        icon: 'V'
-      };
-    }
-
-    if (isStorage(url)) {
-      return inferMetaFromUrl(url);
-    }
-
-    if (/^https?:\/\//i.test(url) === false) {
-      return { visor: 'media', categoria: 'otro', thumbnail: 'thumbnails/gt_0.png', icon: '●' };
-    }
-
-    if (useIframeFlag) {
-      return { visor: 'media', categoria: 'enlace', thumbnail: 'thumbnails/gt_0.png', icon: '↗' };
-    } else {
-      return { visor: 'media', categoria: 'enlaceEXT', thumbnail: 'thumbnails/gt_0.png', icon: '↗' };
-    }
+  if (isYoutube(url) || isVimeo(url)) {
+    return {
+      visor: 'media',
+      categoria: 'yt/vm',
+      thumbnail: 'thumbnails/gt_mp4.png',
+      icon: 'V'
+    };
   }
+
+  if (isStorage(url)) {
+    return inferMetaFromUrl(url);
+  }
+
+  if (/^https?:\/\//i.test(url) === false) {
+    return {
+      visor: 'media',
+      categoria: 'otro',
+      thumbnail: 'thumbnails/gt_0.png',
+      icon: '●'
+    };
+  }
+
+  if (useIframeFlag) {
+    return {
+      visor: 'media',
+      categoria: 'enlace',
+      thumbnail: 'thumbnails/gt_0.png',
+      icon: '↗'
+    };
+  } else {
+    return {
+      visor: 'media',
+      categoria: 'enlaceEXT',
+      thumbnail: 'thumbnails/gt_0.png',
+      icon: '↗'
+    };
+  }
+}
+
 
   // ---------- Helpers UI ----------
   function resetDirArcUI() {
@@ -1359,7 +1375,7 @@
         const main = document.createElement('div');
         main.className = 'item-main';
 
-        const meta = classifyUrlForMedia(it.archivo || it.resolved_url || '', it.categoria === 'enlace');
+        const meta = classifyUrlForMedia(it.resolved_url || it.archivo || '', it.categoria === 'enlace');
         const icon = document.createElement('div');
         icon.className = 'item-icon';
         icon.textContent = (meta.icon || '●');
