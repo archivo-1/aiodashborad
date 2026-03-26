@@ -1472,9 +1472,9 @@
       slugEl.value = safe;
     }
     if (!safe) {
-      slugPreviewEl.innerHTML = 'Enlace de Aio Repo: <code>index.html?slugDirArc=…</code>';
+      slugPreviewEl.innerHTML = 'Enlace de Aio Repo: https://archivo-1.github.io/aiorepo.c/index.html?slugDirArc=…</code>';
     } else {
-      slugPreviewEl.innerHTML = `Enlace de Aio Repo: <code>index.html?slugDirArc=${safe}</code>`;
+      slugPreviewEl.innerHTML = `Enlace de Aio Repo: https://archivo-1.github.io/aiorepo.c/index.html?slugDirArc=${safe}</code>`;
     }
   }
   slugEl.addEventListener('input', updateSlugPreview);
