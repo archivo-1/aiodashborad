@@ -468,13 +468,11 @@
         <div class="user-menu-item" id="menu-change-password">
           Cambiar contraseña
         </div>
-        <!-- Más adelante podrías añadir borrar datos/cuenta aquí -->
         <div class="user-menu-item" id="menu-logout">
           Cerrar sesión
         </div>
       </div>
-      <button id="btn-open-create-item-panel" class="secondary" style="display:none;">+ Contenedor</button>
-      <button id="btn-open-create-dirarc-panel" class="primary">+ Aio Repo</button>
+      <!-- Botón de respaldo para cerrar sesión -->
       <button id="btn-logout" class="secondary" style="display:none;">Cerrar sesión</button>
     </div>
   </header>
@@ -520,6 +518,7 @@
             <h2>Mis Aio Repo</h2>
             <div class="small" id="dirarc-subtitle">Selecciona un Aio Repo para gestionar sus contenedores.</div>
           </div>
+          <button id="btn-open-create-dirarc-panel" class="primary">+ Aio Repo</button>
         </div>
         <ul id="dirarc-list" class="dirarc-list"></ul>
         <div id="dirarc-list-result" class="small"></div>
@@ -534,6 +533,7 @@
           </div>
           <div id="items-header-right">
             <input id="items-search" type="text" placeholder="Buscar contenedores..." />
+            <button id="btn-open-create-item-panel" class="secondary" style="display:none;">+ Contenedor</button>
           </div>
         </div>
         <div id="dirarc-items-view" class="small">
@@ -1271,7 +1271,6 @@
       return;
     }
 
-    // reconstruir colecciones
     const groups = {};
     filtered.forEach(it => {
       const key = it.coleccion || '(sin colección)';
@@ -1279,7 +1278,6 @@
       groups[key].push(it);
     });
 
-    // reconstruir opciones de colecciones filtradas (excepto '(sin colección)')
     collSelect.innerHTML = '';
     const opt = document.createElement('option');
     opt.value = '';
@@ -1758,7 +1756,7 @@
       return;
     }
 
-    const { error } = await supabase.auth.updateUser({ password: newPass }); // [web:473][web:489]
+    const { error } = await supabase.auth.updateUser({ password: newPass }); // [web:473]
     if (error) {
       resultEl.textContent = 'Error al cambiar contraseña: ' + error.message;
       resultEl.className = 'small error';
