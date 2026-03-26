@@ -685,70 +685,34 @@
 
   // ---------- Utilidades URL / tipo ----------
   function normalizeExternalUrl(original) {
-  if (!original) return original;
+    try {
+      const url = new URL(original);
 
-  // Trim básico
-  let trimmed = original.trim();
-
-  try {
-    const url = new URL(trimmed);
-
-    // --- GitHub: convertir blob → raw.githubusercontent.com ---
-    if (url.hostname === 'github.com') {
-      // Esperamos ruta tipo: /usuario/repo/blob/rama/ruta/archivo.ext
-      const parts = url.pathname.split('/').filter(Boolean); // quita vacíos
-
-      const blobIndex = parts.indexOf('blob');
-      if (blobIndex >= 2 && blobIndex < parts.length - 1) {
-        const user = parts[0];
-        const repo = parts[1];
-        const branch = parts[blobIndex + 1];
-        const filePath = parts.slice(blobIndex + 2).join('/');
-
-        const rawUrl = new URL(`https://raw.githubusercontent.com/${user}/${repo}/${branch}/${filePath}`);
-        // conservar query solo si aporta algo (en raw normalmente no hace falta)
-        return rawUrl.toString();
-      }
-
-      // Si no es formato "blob", lo dejamos como está
-      return trimmed;
-    }
-
-    // --- GitHub raw: dejar tal cual ---
-    if (url.hostname === 'raw.githubusercontent.com') {
-      return trimmed;
-    }
-
-    // --- Dropbox: normalizar a descarga directa ---
-    if (url.hostname.includes('dropbox.com')) {
-      url.hostname = 'dl.dropboxusercontent.com';
-      url.searchParams.set('raw', '1');
-      url.searchParams.delete('dl');
-      return url.toString();
-    }
-
-    // --- Google Drive: intentar transformar a enlace de descarga ---
-    if (url.hostname.includes('drive.google.com')) {
-      const m = url.pathname.match(/\/file\/d\/([^/]+)\/view/);
-      if (m && m[1]) {
-        const fileId = m[1];
-        return `https://drive.google.com/uc?export=download&id=${fileId}`;
-      }
-      if (url.pathname.startsWith('/uc')) {
-        url.searchParams.set('export', 'download');
+      if (url.hostname.includes('dropbox.com')) {
+        url.hostname = 'dl.dropboxusercontent.com';
+        url.searchParams.set('raw', '1');
+        url.searchParams.delete('dl');
         return url.toString();
       }
-      return trimmed;
+
+      if (url.hostname.includes('drive.google.com')) {
+        const m = url.pathname.match(/\/file\/d\/([^/]+)\/view/);
+        if (m && m[1]) {
+          const fileId = m[1];
+          return `https://drive.google.com/uc?export=download&id=${fileId}`;
+        }
+        if (url.pathname.startsWith('/uc')) {
+          url.searchParams.set('export', 'download');
+          return url.toString();
+        }
+        return original;
+      }
+
+      return original;
+    } catch {
+      return original;
     }
-
-    // Otros hosts: devolver sin cambios
-    return trimmed;
-  } catch {
-    // Si new URL falla (URL mal formada), devolvemos el original sin tocar
-    return trimmed;
   }
-}
-
 
   function isYoutube(url) {
     return /youtube\.com\/watch\?v=|youtu\.be\//i.test(url);
@@ -759,70 +723,55 @@
   }
 
   function isStorage(url) {
-  return /dropbox\.com|dl\.dropboxusercontent\.com|drive\.google\.com|supabase\.co|raw\.githubusercontent\.com|wetransfer\.com/i.test(
-    url
-  );
-}
-
+    return /dropbox\.com|dl\.dropboxusercontent\.com|drive\.google\.com|supabase\.co/i.test(url);
+  }
 
   function humanSourceLabel(url, categoria, useIframe) {
-  if (!url) return '';
-  let host = '';
-  let u = null;
-  try {
-    u = new URL(url);
-    host = u.hostname.replace(/^www\./, '');
-  } catch {
+    if (!url) return '';
+    let host = '';
+    let u = null;
+    try {
+      u = new URL(url);
+      host = u.hostname.replace(/^www\./, '');
+    } catch {
+      return url;
+    }
+
+    if (isYoutube(url) || isVimeo(url) || categoria === 'yt/vm') {
+      const prefix = 'Video incrustado';
+      const service = host.includes('youtube')
+        ? 'YouTube'
+        : host.includes('vimeo')
+        ? 'Vimeo'
+        : host;
+      return `${prefix} – ${service}`;
+    }
+
+    if (host.includes('dropbox')) {
+      const parts = (u.pathname || '').split('/');
+      const file = parts[parts.length - 1] || '';
+      const cleanFile = file.split('?')[0] || file;
+      return `${cleanFile || 'Archivo'} – Dropbox`;
+    }
+
+    if (host.includes('drive.google.com')) {
+      return 'Archivo – Google Drive';
+    }
+
+    if (host.includes('supabase.co')) {
+      return 'Archivo – Supabase Storage';
+    }
+
+    if (categoria === 'enlace' || categoria === 'enlaceEXT' || useIframe) {
+      const prefix =
+        categoria === 'enlace' || useIframe
+          ? 'Contenido incrustado'
+          : 'Enlace externo';
+      return `${prefix} – ${host}`;
+    }
+
     return url;
   }
-
-  if (isYoutube(url) || isVimeo(url) || categoria === 'yt/vm') {
-    const prefix = 'Video incrustado';
-    const service = host.includes('youtube')
-      ? 'YouTube'
-      : host.includes('vimeo')
-      ? 'Vimeo'
-      : host;
-    return `${prefix} – ${service}`;
-  }
-
-  if (host.includes('dropbox')) {
-    const parts = (u.pathname || '').split('/');
-    const file = parts[parts.length - 1] || '';
-    const cleanFile = file.split('?')[0] || file;
-    return `${cleanFile || 'Archivo'} – Dropbox`;
-  }
-
-  if (host.includes('drive.google.com')) {
-    return 'Archivo – Google Drive';
-  }
-
-  if (host.includes('supabase.co')) {
-    return 'Archivo – Supabase Storage';
-  }
-
-  if (host.includes('raw.githubusercontent.com')) {
-    const parts = (u.pathname || '').split('/');
-    const file = parts[parts.length - 1] || '';
-    const cleanFile = file.split('?')[0] || file;
-    return `${cleanFile || 'Archivo'} – GitHub (raw)`;
-  }
-
-  if (host.includes('wetransfer.com')) {
-    return 'Enlace temporal – WeTransfer';
-  }
-
-  if (categoria === 'enlace' || categoria === 'enlaceEXT' || useIframe) {
-    const prefix =
-      categoria === 'enlace' || useIframe
-        ? 'Contenido incrustado'
-        : 'Enlace externo';
-    return `${prefix} – ${host}`;
-  }
-
-  return url;
-}
-
 
   function inferMetaFromUrl(url) {
     const safe = (url || '').split('#')[0].split('?')[0];
@@ -859,47 +808,31 @@
   }
 
   function classifyUrlForMedia(originalUrl, useIframeFlag) {
-  const url = (originalUrl || '').trim();
+    const url = (originalUrl || '').trim();
 
-  if (isYoutube(url) || isVimeo(url)) {
-    return {
-      visor: 'media',
-      categoria: 'yt/vm',
-      thumbnail: 'thumbnails/gt_mp4.png',
-      icon: 'V'
-    };
+    if (isYoutube(url) || isVimeo(url)) {
+      return {
+        visor: 'media',
+        categoria: 'yt/vm',
+        thumbnail: 'thumbnails/gt_mp4.png',
+        icon: 'V'
+      };
+    }
+
+    if (isStorage(url)) {
+      return inferMetaFromUrl(url);
+    }
+
+    if (/^https?:\/\//i.test(url) === false) {
+      return { visor: 'media', categoria: 'otro', thumbnail: 'thumbnails/gt_0.png', icon: '●' };
+    }
+
+    if (useIframeFlag) {
+      return { visor: 'media', categoria: 'enlace', thumbnail: 'thumbnails/gt_0.png', icon: '↗' };
+    } else {
+      return { visor: 'media', categoria: 'enlaceEXT', thumbnail: 'thumbnails/gt_0.png', icon: '↗' };
+    }
   }
-
-  if (isStorage(url)) {
-    return inferMetaFromUrl(url);
-  }
-
-  if (/^https?:\/\//i.test(url) === false) {
-    return {
-      visor: 'media',
-      categoria: 'otro',
-      thumbnail: 'thumbnails/gt_0.png',
-      icon: '●'
-    };
-  }
-
-  if (useIframeFlag) {
-    return {
-      visor: 'media',
-      categoria: 'enlace',
-      thumbnail: 'thumbnails/gt_0.png',
-      icon: '↗'
-    };
-  } else {
-    return {
-      visor: 'media',
-      categoria: 'enlaceEXT',
-      thumbnail: 'thumbnails/gt_0.png',
-      icon: '↗'
-    };
-  }
-}
-
 
   // ---------- Helpers UI ----------
   function resetDirArcUI() {
@@ -1369,37 +1302,30 @@
       groupDiv.appendChild(title);
 
       groups[coll].forEach(it => {
-  const line = document.createElement('div');
-  line.className = 'items-group-item';
+        const line = document.createElement('div');
+        line.className = 'items-group-item';
 
-  const main = document.createElement('div');
-  main.className = 'item-main';
+        const main = document.createElement('div');
+        main.className = 'item-main';
 
-  // Usar SIEMPRE la URL efectiva normalizada
-  const effectiveUrl = it.resolved_url || it.archivo || '';
+        const meta = classifyUrlForMedia(it.archivo || it.resolved_url || '', it.categoria === 'enlace');
+        const icon = document.createElement('div');
+        icon.className = 'item-icon';
+        icon.textContent = (meta.icon || '●');
 
-  const meta = classifyUrlForMedia(effectiveUrl, it.categoria === 'enlace');
-  const icon = document.createElement('div');
-  icon.className = 'item-icon';
-  icon.textContent = meta.icon || '●';
+        const textWrap = document.createElement('div');
+        textWrap.className = 'item-text';
 
-  const textWrap = document.createElement('div');
-  textWrap.className = 'item-text';
+        const nameSpan = document.createElement('div');
+        nameSpan.className = 'item-name';
+        nameSpan.textContent = it.nombre || it.item_id;
 
-  const nameSpan = document.createElement('div');
-  nameSpan.className = 'item-name';
-  nameSpan.textContent = it.nombre || it.item_id;
+        const urlSpan = document.createElement('div');
+        urlSpan.className = 'item-url';
+        urlSpan.textContent = humanSourceLabel(it.archivo, it.categoria, it.categoria === 'enlace');
 
-  const urlSpan = document.createElement('div');
-  urlSpan.className = 'item-url';
-  urlSpan.textContent = humanSourceLabel(
-    effectiveUrl,
-    it.categoria,
-    it.categoria === 'enlace'
-  );
-
-  textWrap.appendChild(nameSpan);
-  textWrap.appendChild(urlSpan);
+        textWrap.appendChild(nameSpan);
+        textWrap.appendChild(urlSpan);
 
         main.appendChild(icon);
         main.appendChild(textWrap);
@@ -1523,28 +1449,24 @@
   const useIframeEl = document.getElementById('item-use-iframe');
 
   function updateTypePreview() {
-  const original = archivoInputEl.value.trim();
-  const useIframe = useIframeEl.checked;
-  if (!original) {
-    iframeOptionsEl.style.display = 'none';
-    typePreviewEl.textContent = '';
-    return;
+    const url = archivoInputEl.value.trim();
+    const useIframe = useIframeEl.checked;
+    if (!url) {
+      iframeOptionsEl.style.display = 'none';
+      typePreviewEl.textContent = '';
+      return;
+    }
+    if (isYoutube(url) || isVimeo(url) || isStorage(url)) {
+      iframeOptionsEl.style.display = 'none';
+    } else if (/^https?:\/\//i.test(url)) {
+      iframeOptionsEl.style.display = 'block';
+    } else {
+      iframeOptionsEl.style.display = 'none';
+    }
+
+    const meta = classifyUrlForMedia(url, useIframe);
+    typePreviewEl.textContent = `Se detectará como visor “${meta.visor}” y categoría “${meta.categoria}”.`;
   }
-
-  const url = normalizeExternalUrl(original);  // <-- usar normalizada
-
-  if (isYoutube(url) || isVimeo(url) || isStorage(url)) {
-    iframeOptionsEl.style.display = 'none';
-  } else if (/^https?:\/\//i.test(url)) {
-    iframeOptionsEl.style.display = 'block';
-  } else {
-    iframeOptionsEl.style.display = 'none';
-  }
-
-  const meta = classifyUrlForMedia(url, useIframe);
-  typePreviewEl.textContent = `Se detectará como visor “${meta.visor}” y categoría “${meta.categoria}”.`;
-}
-}
 
   archivoInputEl.addEventListener('input', updateTypePreview);
   useIframeEl.addEventListener('change', updateTypePreview);
