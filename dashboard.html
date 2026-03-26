@@ -685,34 +685,70 @@
 
   // ---------- Utilidades URL / tipo ----------
   function normalizeExternalUrl(original) {
-    try {
-      const url = new URL(original);
+  if (!original) return original;
 
-      if (url.hostname.includes('dropbox.com')) {
-        url.hostname = 'dl.dropboxusercontent.com';
-        url.searchParams.set('raw', '1');
-        url.searchParams.delete('dl');
+  // Trim básico
+  let trimmed = original.trim();
+
+  try {
+    const url = new URL(trimmed);
+
+    // --- GitHub: convertir blob → raw.githubusercontent.com ---
+    if (url.hostname === 'github.com') {
+      // Esperamos ruta tipo: /usuario/repo/blob/rama/ruta/archivo.ext
+      const parts = url.pathname.split('/').filter(Boolean); // quita vacíos
+
+      const blobIndex = parts.indexOf('blob');
+      if (blobIndex >= 2 && blobIndex < parts.length - 1) {
+        const user = parts[0];
+        const repo = parts[1];
+        const branch = parts[blobIndex + 1];
+        const filePath = parts.slice(blobIndex + 2).join('/');
+
+        const rawUrl = new URL(`https://raw.githubusercontent.com/${user}/${repo}/${branch}/${filePath}`);
+        // conservar query solo si aporta algo (en raw normalmente no hace falta)
+        return rawUrl.toString();
+      }
+
+      // Si no es formato "blob", lo dejamos como está
+      return trimmed;
+    }
+
+    // --- GitHub raw: dejar tal cual ---
+    if (url.hostname === 'raw.githubusercontent.com') {
+      return trimmed;
+    }
+
+    // --- Dropbox: normalizar a descarga directa ---
+    if (url.hostname.includes('dropbox.com')) {
+      url.hostname = 'dl.dropboxusercontent.com';
+      url.searchParams.set('raw', '1');
+      url.searchParams.delete('dl');
+      return url.toString();
+    }
+
+    // --- Google Drive: intentar transformar a enlace de descarga ---
+    if (url.hostname.includes('drive.google.com')) {
+      const m = url.pathname.match(/\/file\/d\/([^/]+)\/view/);
+      if (m && m[1]) {
+        const fileId = m[1];
+        return `https://drive.google.com/uc?export=download&id=${fileId}`;
+      }
+      if (url.pathname.startsWith('/uc')) {
+        url.searchParams.set('export', 'download');
         return url.toString();
       }
-
-      if (url.hostname.includes('drive.google.com')) {
-        const m = url.pathname.match(/\/file\/d\/([^/]+)\/view/);
-        if (m && m[1]) {
-          const fileId = m[1];
-          return `https://drive.google.com/uc?export=download&id=${fileId}`;
-        }
-        if (url.pathname.startsWith('/uc')) {
-          url.searchParams.set('export', 'download');
-          return url.toString();
-        }
-        return original;
-      }
-
-      return original;
-    } catch {
-      return original;
+      return trimmed;
     }
+
+    // Otros hosts: devolver sin cambios
+    return trimmed;
+  } catch {
+    // Si new URL falla (URL mal formada), devolvemos el original sin tocar
+    return trimmed;
   }
+}
+
 
   function isYoutube(url) {
     return /youtube\.com\/watch\?v=|youtu\.be\//i.test(url);
