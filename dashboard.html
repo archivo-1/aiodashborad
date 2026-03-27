@@ -873,7 +873,7 @@ function inferMetaFromUrl(url) {
     return {
       visor: 'media',          // viewer-media.html
       categoria: 'txt',
-      thumbnail: 'thumbnails/gt_0.png', // puedes cambiar a un ícono específico si lo creas
+      thumbnail: 'thumbnails/gt_txt.png', // puedes cambiar a un ícono específico si lo creas
       icon: 'TXT'
     };
   }
@@ -937,7 +937,7 @@ function inferMetaFromUrl(url) {
     return {
       visor: 'media',          // viewer-media.html
       categoria: 'imagen',
-      thumbnail: 'thumbnails/gt_img.png',
+      thumbnail: 'thumbnails/gt_IMG.png',
       icon: 'IMG'
     };
   }
@@ -947,7 +947,7 @@ function inferMetaFromUrl(url) {
     return {
       visor: 'media',          // viewer-media.html
       categoria: 'video',
-      thumbnail: 'thumbnails/gt_mp4.png',
+      thumbnail: 'thumbnails/gt_video.png',
       icon: 'V'
     };
   }
@@ -971,7 +971,7 @@ function inferMetaFromUrl(url) {
     return {
       visor: 'map',            // viewer-map.html (o equivalente)
       categoria: 'mapa',
-      thumbnail: 'thumbnails/gt_map.png',
+      thumbnail: 'thumbnails/gt_geojson.png',
       icon: 'M'
     };
   }
@@ -1001,7 +1001,7 @@ function inferMetaFromUrl(url) {
       return {
         visor: 'media',
         categoria: 'yt/vm',
-        thumbnail: 'thumbnails/gt_mp4.png',
+        thumbnail: 'thumbnails/gt_video.png',
         icon: 'V'
       };
     }
@@ -1015,9 +1015,9 @@ function inferMetaFromUrl(url) {
     }
 
     if (useIframeFlag) {
-      return { visor: 'media', categoria: 'enlace', thumbnail: 'thumbnails/gt_0.png', icon: '↗' };
+      return { visor: 'media', categoria: 'enlace', thumbnail: 'thumbnails/gt_WEB.png', icon: '↗' };
     } else {
-      return { visor: 'media', categoria: 'enlaceEXT', thumbnail: 'thumbnails/gt_0.png', icon: '↗' };
+      return { visor: 'media', categoria: 'enlaceEXT', thumbnail: 'thumbnails/gt_webext.png', icon: '↗' };
     }
   }
 
