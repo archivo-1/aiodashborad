@@ -1681,7 +1681,7 @@ const viewerUrl = `${ARCHVISTA_BASE}/viewer-${visor}.html?id=${encodeURIComponen
           openItemEditor(it);
         };
 
-               btnDelete.onclick = async ev => {
+                btnDelete.onclick = async ev => {
           ev.stopPropagation();
 
           // Evitar dobles clics mientras se borra
@@ -1695,7 +1695,7 @@ const viewerUrl = `${ARCHVISTA_BASE}/viewer-${visor}.html?id=${encodeURIComponen
           const { error } = await supabase
             .from('items')
             .delete()
-            .eq('id', it.item_id);
+            .eq('id', it.id); // usar id (uuid), no item_id
 
           btnDelete.disabled = false;
 
@@ -1704,6 +1704,9 @@ const viewerUrl = `${ARCHVISTA_BASE}/viewer-${visor}.html?id=${encodeURIComponen
             alert('Error borrando contenedor: ' + error.message);
             return;
           }
+
+          await loadDirArcItems();
+        };
 
           await loadDirArcItems();
         };
@@ -1845,7 +1848,7 @@ const viewerUrl = `${ARCHVISTA_BASE}/viewer-${visor}.html?id=${encodeURIComponen
           thumbnail: meta.thumbnail,
           ui_config: uiConfig
         })
-        .eq('id', editingItem.item_id);
+        .eq('id', editingItem.id);
       error = resp.error;
     } else {
       const resp = await supabase.from('items').insert({
