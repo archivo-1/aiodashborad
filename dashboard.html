@@ -1570,7 +1570,7 @@ function inferMetaFromUrl(url) {
         const slugParam = currentDirArc.slug;
         const extra = slugParam ? `&slugDirArc=${encodeURIComponent(slugParam)}` : '';
         const visor = it.visor || meta.visor || 'media';
-        const viewerUrl = `${ARCHVISTA_BASE}/viewer-${visor}.html?id=${encodeURIComponent(it.item_id)}${extra}`;
+        const viewerUrl = `${ARCHVISTA_BASE}/viewer-${visor}.html?id=${encodeURIComponent(it.id)}${extra}`;
 
         btnVisit.onclick = ev => {
           ev.stopPropagation();
