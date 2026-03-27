@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />   <link rel="manifest" href="manifest.json" />   <meta name="theme-color" content="#020617" />   <meta name="mobile-web-app-capable" content="yes" />   <meta name="apple-mobile-web-app-capable" content="yes" />   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />   <meta name="apple-mobile-web-app-title" content="AioDB" />   <link rel="apple-touch-icon" href="https://archivo-1.github.io/aiorepo.c/thumbnails/icon-192.png" />
-  <title>Aio Repo - DirArc Dashboard</title>
+  <title>Aio Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
@@ -519,8 +519,8 @@
 <body>
   <header>
     <div class="header-title">
-      <h1>Aio Repo – DirArc Dashboard</h1>
-      <span>Gestionar DirArcs y Contenedores de Ruta</span>
+      <h1>Aio Dashboard</h1>
+      <span>Gestionar directorios Aio Repo C.</span>
     </div>
     <div class="header-right">
       <div id="user-info" class="badge-user" style="display:none;"></div>
@@ -544,7 +544,7 @@
       <div class="row">
         <div>
           <h3>Registro</h3>
-          <p class="small">Crea tu cuenta de host. Sólo necesitas email y contraseña.</p>
+          <p class="small">Crea una cuenta de host sólo requiere un email y una contraseña. (mínimo 6 caractéres)</p>
           <label>Email
             <input id="signup-email" type="email" placeholder="usuario@ejemplo.com" />
           </label>
@@ -556,7 +556,7 @@
         </div>
         <div>
           <h3>Login</h3>
-          <p class="small">Si ya tienes cuenta, inicia sesión para ver tus Aio Repo.</p>
+          <p class="small">Si ya tienes cuenta, inicia sesión para gestionar tus directorios Aio Repo C.</p>
           <label>Email
             <input id="login-email" type="email" />
           </label>
@@ -576,7 +576,7 @@
         <div id="dirarc-header">
           <div>
             <h2>Mis Directorios Aio Repo C</h2>
-            <div class="small" id="dirarc-subtitle">Selecciona un dirArc para gestionar sus contenedores.</div>
+            <div class="small" id="dirarc-subtitle">Selecciona un directorio Arc para gestionar tus colecciones.</div>
           </div>
           <button id="btn-open-create-dirarc-panel" class="primary">+ Aio Repo</button>
         </div>
@@ -589,7 +589,7 @@
         <div id="items-header">
           <div>
             <h2>Contenedores</h2>
-            <div id="current-dirarc-label" class="small">Ningún dirArc seleccionado.</div>
+            <div id="current-dirarc-label" class="small">Ningún directorio Arc seleccionado.</div>
           </div>
           <div id="items-header-right">
             <input id="items-search" type="text" placeholder="Buscar contenedores..." />
@@ -597,7 +597,7 @@
           </div>
         </div>
         <div id="dirarc-items-view" class="small">
-          Inicia sesión y selecciona un dirArc en la columna izquierda.
+          Inicia sesión y selecciona un directorio Arc en la columna izquierda.
         </div>
       </section>
     </div>
@@ -609,7 +609,7 @@
   <!-- Panel Aio Repo -->
   <div id="panel-create-dirarc" class="side-panel">
     <div class="side-panel-header">
-      <h3 id="dirarc-panel-title">Nuevo Aio Repo</h3>
+      <h3 id="dirarc-panel-title">Nuevo dirARC.</h3>
       <button id="btn-close-create-dirarc" class="secondary icon">✕</button>
     </div>
     <div class="side-panel-body">
@@ -617,14 +617,14 @@
         Un dirArc es un archivo “content.json" dinámico que agrupa tus contenedores de ruta en colecciones y dirArcs.
         Luego lo verás en Aio Repo C con sus visores correspondientes.
       </p>
-      <label>Nombre del dirArc
+      <label>Nombre del dirARC
         <input id="dirarc-title" placeholder="Casa Herrera – Fase 2" />
       </label>
-      <label>Identificador de Aio Repo (para URL, sin espacios)
+      <label>Identificador de Aio Repo C. (para URL, sin espacios)
         <input id="dirarc-slug" placeholder="casa-herrera-fase-2" />
       </label>
       <div id="slug-preview" class="small">
-        Enlace de Aio Repo: <code>index.html?slugDirArc=…</code>
+        Enlace de Aio Repo C.: <code>index.html?slugDirArc=…</code>
       </div>
       <label>Descripción
         <textarea id="dirarc-desc" rows="2" placeholder="Colección de contenedores para este proyecto."></textarea>
@@ -633,7 +633,7 @@
     </div>
     <div class="side-panel-footer">
       <button id="btn-cancel-dirarc" class="secondary">Cancelar</button>
-      <button id="btn-save-dirarc" class="primary">Guardar Aio Repo</button>
+      <button id="btn-save-dirarc" class="primary">Guardar Aio Repo C.</button>
     </div>
   </div>
 
@@ -653,20 +653,20 @@
         <input id="item-nombre" placeholder="Modelo IFC – Cliente X" />
       </label>
 
-      <label>Colección dentro del Aio Repo
+      <label>Colección dentro del Aio Repo C.
         <select id="item-coleccion-select">
           <option value="">Escribe una nueva colección…</option>
         </select>
         <input id="item-coleccion-input" placeholder="Casa Herrera – Fase 2" />
         <span class="small">
-          Puedes reutilizar colecciones existentes o escribir una nueva.
+          Puedes reutilizar colecciones existentes o crear una nueva.
         </span>
       </label>
 
       <label>Archivo o enlace (URL pública)
         <input id="item-archivo" placeholder="https://www.dropbox.com/..." />
         <span class="small">
-          Enlace público (Dropbox, Drive, YouTube, Vimeo, GeoJSON, sitio web, etc.).
+          Enlace público (Dropbox, YouTube, Vimeo, GeoJSON, sitio web, etc.).
         </span>
       </label>
 
@@ -674,7 +674,7 @@
         <div class="inline-row">
           <input type="checkbox" id="item-use-iframe" />
           <label for="item-use-iframe" style="margin:0; font-size:0.8rem;">
-            Ver dentro de ArchVista (iframe) cuando el sitio lo permita
+            Ver dentro de ARC (incrustado) cuando el sitio lo permita
           </label>
         </div>
         <div class="small">
@@ -709,7 +709,7 @@
     </div>
     <div class="side-panel-body">
       <p class="small">
-        Ingresa una nueva contraseña para tu cuenta de Aio Repo.
+        Ingresa una nueva contraseña para tu cuenta de Aio Dashboard.
       </p>
       <label>Nueva contraseña
         <input id="password-new" type="password" />
