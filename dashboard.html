@@ -1637,11 +1637,10 @@ function inferMetaFromUrl(url) {
         actions.appendChild(btnEdit);
         actions.appendChild(btnDelete);
 
-        const slugParam = currentDirArc.slug;
-const extra = slugParam ? `&slugDirArc=${encodeURIComponent(slugParam)}` : '';
-const visor = it.visor || meta.visor || 'media';
-const viewerUrl = `${ARCHVISTA_BASE}/viewer-${visor}.html?id=${encodeURIComponent(it.id)}${extra}`;
-
+                const slugParam = currentDirArc.slug;
+        const extra = slugParam ? `&slugDirArc=${encodeURIComponent(slugParam)}` : '';
+        const visor = it.visor || meta.visor || 'media';
+        const viewerUrl = `${ARCHVISTA_BASE}/viewer-${visor}.html?id=${encodeURIComponent(it.id)}${extra}`;
 
         btnVisit.onclick = ev => {
           ev.stopPropagation();
@@ -1676,7 +1675,12 @@ const viewerUrl = `${ARCHVISTA_BASE}/viewer-${visor}.html?id=${encodeURIComponen
           }
         };
 
-                btnDelete.onclick = async ev => {
+        btnEdit.onclick = ev => {
+          ev.stopPropagation();
+          openItemEditor(it);
+        };
+
+        btnDelete.onclick = async ev => {
           ev.stopPropagation();
 
           // Evitar dobles clics mientras se borra
@@ -1701,8 +1705,8 @@ const viewerUrl = `${ARCHVISTA_BASE}/viewer-${visor}.html?id=${encodeURIComponen
           }
 
           await loadDirArcItems();
-        };  // <- aquí se cierra solo el handler de delete
-
+        };
+        
         line.appendChild(main);
         line.appendChild(actions);
         groupDiv.appendChild(line);
