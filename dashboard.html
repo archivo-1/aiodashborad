@@ -787,51 +787,67 @@
   }
 
   function humanSourceLabel(url, categoria, useIframe) {
-    if (!url) return '';
-    let host = '';
-    let u = null;
-    try {
-      u = new URL(url);
-      host = u.hostname.replace(/^www\./, '');
-    } catch {
-      return url;
-    }
-
-    if (isYoutube(url) || isVimeo(url) || categoria === 'yt/vm') {
-      const prefix = 'Video incrustado';
-      const service = host.includes('youtube')
-        ? 'YouTube'
-        : host.includes('vimeo')
-        ? 'Vimeo'
-        : host;
-      return `${prefix} – ${service}`;
-    }
-
-    if (host.includes('dropbox')) {
-      const parts = (u.pathname || '').split('/');
-      const file = parts[parts.length - 1] || '';
-      const cleanFile = file.split('?')[0] || file;
-      return `${cleanFile || 'Archivo'} – Dropbox`;
-    }
-
-    if (host.includes('drive.google.com')) {
-      return 'Archivo – Google Drive';
-    }
-
-    if (host.includes('supabase.co')) {
-      return 'Archivo – Supabase Storage';
-    }
-
-    if (categoria === 'enlace' || categoria === 'enlaceEXT' || useIframe) {
-      const prefix =
-        categoria === 'enlace' || useIframe
-          ? 'Contenido incrustado'
-          : 'Enlace externo';
-      return `${prefix} – ${host}`;
-    }
-
+  if (!url) return '';
+  let host = '';
+  let u = null;
+  try {
+    u = new URL(url);
+    host = u.hostname.replace(/^www\./, '');
+  } catch {
     return url;
   }
+
+  if (isYoutube(url) || isVimeo(url) || categoria === 'yt/vm') {
+    const prefix = 'Video incrustado';
+    const service = host.includes('youtube')
+      ? 'YouTube'
+      : host.includes('vimeo')
+      ? 'Vimeo'
+      : host;
+    return `${prefix} – ${service}`;
+  }
+
+  // Google Docs / Sheets / Slides (publicados)
+  if (host === 'docs.google.com') {
+    if (categoria === 'gdoc') {
+      return 'Documento – Google Docs';
+    }
+    if (categoria === 'gsheet') {
+      return 'Hoja de cálculo – Google Sheets';
+    }
+    if (categoria === 'gslide') {
+      return 'Presentación – Google Slides';
+    }
+    // Cualquier otro docs.google.com
+    return 'Contenido – Google Docs';
+  }
+
+  if (host.includes('dropbox')) {
+    const parts = (u.pathname || '').split('/');
+    const file = parts[parts.length - 1] || '';
+    const cleanFile = file.split('?')[0] || file;
+    return `${cleanFile || 'Archivo'} – Dropbox`;
+  }
+
+  if (host.includes('drive.google.com')) {
+    return 'Archivo – Google Drive';
+  }
+
+  if (host.includes('supabase.co')) {
+    return 'Archivo – Supabase Storage';
+  }
+
+  if (categoria === 'enlace' || categoria === 'enlaceEXT' || useIframe) {
+    const prefix =
+      categoria === 'enlace' || useIframe
+        ? 'Contenido incrustado'
+        : 'Enlace externo';
+    return `${prefix} – ${host}`;
+  }
+
+  return url;
+}
+
 
   // Decide visor + categoría + icono a partir de la extensión del archivo.
 // Esta función es el "contrato" entre Aio Dashboard y los visores de ArchVista.
@@ -1706,24 +1722,33 @@ function inferMetaFromUrl(url) {
   const useIframeEl = document.getElementById('item-use-iframe');
 
   function updateTypePreview() {
-    const url = archivoInputEl.value.trim();
-    const useIframe = useIframeEl.checked;
-    if (!url) {
-      iframeOptionsEl.style.display = 'none';
-      typePreviewEl.textContent = '';
-      return;
-    }
-    if (isYoutube(url) || isVimeo(url) || isStorage(url)) {
-      iframeOptionsEl.style.display = 'none';
-    } else if (/^https?:\/\//i.test(url)) {
-      iframeOptionsEl.style.display = 'block';
-    } else {
-      iframeOptionsEl.style.display = 'none';
-    }
+  const url = archivoInputEl.value.trim();
+  const useIframe = useIframeEl.checked;
 
-    const meta = classifyUrlForMedia(url, useIframe);
-    typePreviewEl.textContent = `Se detectará como visor “${meta.visor}” y categoría “${meta.categoria}”.`;
+  if (!url) {
+    iframeOptionsEl.style.display = 'none';
+    typePreviewEl.textContent = '';
+    return;
   }
+
+  const isStor = isStorage(url);
+  const isYT = isYoutube(url) || isVimeo(url);
+  const isGDocs = /^https?:\/\/docs\.google\.com\//i.test(url);
+
+  if (isYT || isStor || isGDocs) {
+    // YouTube/Vimeo, storage (Dropbox/Drive/Supabase) o Google Docs/Sheets/Slides:
+    // no mostramos la opción de iframe manual.
+    iframeOptionsEl.style.display = 'none';
+  } else if (/^https?:\/\/\//i.test(url)) {
+    // Sitio externo genérico: dejamos elegir iframe o no.
+    iframeOptionsEl.style.display = 'block';
+  } else {
+    iframeOptionsEl.style.display = 'none';
+  }
+
+  const meta = classifyUrlForMedia(url, useIframe);
+  typePreviewEl.textContent = `Se detectará como visor “${meta.visor}” y categoría “${meta.categoria}”.`;
+}
 
   archivoInputEl.addEventListener('input', updateTypePreview);
   useIframeEl.addEventListener('change', updateTypePreview);
