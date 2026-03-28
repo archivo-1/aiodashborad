@@ -1,0 +1,19 @@
+Aio Dashboard almacena solo la información necesaria para ofrecerte el dashboard: un correo electrónico, tus directorio de Aio 
+Repo y los metadatos de los enlaces o archivos que tú ingresas.
+
+Ni yo, ni los repositorios analizan ni reutilizan tu contenido para otros fines. El correo que uses no se verifica ni se utiliza 
+para envíos comerciales; su único propósito es asociar tu sesión con tus directorios de Aio Repo C.
+
+Puedes eliminar en cualquier momento tu cuenta y todos tus datos (directorios Aio Repo y contenedores) desde el menú de usuario del 
+dashboard. Esta acción es irreversible y elimina también tu acceso a la aplicación Dashboard hasta crear una nueva cuenta.
+
+El contenido de los enlaces o archivos que añadas a Aio Repo C sigue siendo responsabilidad exclusiva tuya. Debes asegurarte de 
+tener los derechos necesarios para compartirlos o enlazarlos y de cumplir las leyes aplicables y los términos de los servicios de 
+terceros (por ejemplo Dropbox, YouTube, Google Drive, etc.).
+
+Aio Repo C se ofrece “tal cual”, sin garantías de disponibilidad continua ni de conservación permanente de tus datos. la
+responsabilidad por pérdidas de información derivadas del uso de la incorrecto de la herramienta es del usuario.
+
+
+archivo-1 
+28/03/2026
