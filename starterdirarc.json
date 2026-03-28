@@ -1,0 +1,72 @@
+{
+  "slug": "aiorepo",
+  "title": "Aio Repo C",
+  "description": "DirArc de inicio",
+  "items": [
+    {
+      "item_id": "aiorepo_001",
+      "nombre": "+ Crear un AioRepo",
+      "visor": "media",
+      "categoria": "enlace",
+      "coleccion": "_Herramientas",
+      "source": "url",
+      "archivo": "https://archivo-1.github.io/aiodb/dashboard.html",
+      "resolved_url": "https://archivo-1.github.io/aiodb/dashboard.html",
+      "descripcion": "Dashboard de AioRepo para crear y gestionar galerías",
+      "thumbnail": "thumbnails/gt_WEB.png",
+      "ui_config": null
+    },
+    {
+      "item_id": "aiorepo_002",
+      "nombre": "Galería Demo",
+      "visor": "media",
+      "categoria": "enlace",
+      "coleccion": "_Herramientas",
+      "source": "url",
+      "archivo": "https://archivo-1.github.io/aiorepo.c/index.html?slugDirArc=dirarcdemos",
+      "resolved_url": "https://archivo-1.github.io/aiorepo.c/index.html?slugDirArc=dirarcdemos",
+      "descripcion": "Ejemplo de un directorio en Aio Repo C. con contenido de usuario demo.",
+      "thumbnail": "thumbnails/gt_WEB.png",
+      "ui_config": null
+    },
+    {
+      "item_id": "aiorepo_003",
+      "nombre": "Política de privacidad",
+      "visor": "media",
+      "categoria": "txt",
+      "coleccion": "Documentación",
+      "source": "url",
+      "archivo": "https://www.dropbox.com/scl/fi/ykk74lx892zbxqx8j796a/pol.txt?rlkey=50d77jm0tlnoqvd7k8z7vmdx0&st=2ozvbq1u&dl=0",
+      "resolved_url": "https://dl.dropboxusercontent.com/scl/fi/ykk74lx892zbxqx8j796a/pol.txt?rlkey=50d77jm0tlnoqvd7k8z7vmdx0&st=2ozvbq1u&raw=1",
+      "descripcion": "Readme sobre la política de privacidad entre Aio Repo y tus datos.",
+      "thumbnail": "thumbnails/gt_txt.png",
+      "ui_config": null
+    },
+    {
+      "item_id": "aiorepo_004",
+      "nombre": "Licencias",
+      "visor": "media",
+      "categoria": "txt",
+      "coleccion": "Documentación",
+      "source": "url",
+      "archivo": "https://www.dropbox.com/scl/fi/nl60szoazvwl3zdzg8ewt/licencias.txt?rlkey=iiowyqqf3hcrwync7fmvhew46&st=uf7dr63j&dl=0",
+      "resolved_url": "https://dl.dropboxusercontent.com/scl/fi/nl60szoazvwl3zdzg8ewt/licencias.txt?rlkey=iiowyqqf3hcrwync7fmvhew46&st=uf7dr63j&raw=1",
+      "descripcion": "Licencias de uso de dependencias",
+      "thumbnail": "thumbnails/gt_txt.png",
+      "ui_config": null
+    },
+    {
+      "item_id": "aiorepo_005",
+      "nombre": "Guía Rápida de Aio DB",
+      "visor": "media",
+      "categoria": "pdf",
+      "coleccion": "Documentación",
+      "source": "url",
+      "archivo": "https://www.dropbox.com/scl/fi/zygioi8zdu10is1zwe3vt/Gu-a-de-uso-r-pido.pdf?rlkey=8aihcy1o6q0dtbd93yv211d10&st=cahsh15s&dl=0",
+      "resolved_url": "https://dl.dropboxusercontent.com/scl/fi/zygioi8zdu10is1zwe3vt/Gu-a-de-uso-r-pido.pdf?rlkey=8aihcy1o6q0dtbd93yv211d10&st=cahsh15s&raw=1",
+      "descripcion": "Como indexar contenido correctamente en el directorio Aio Repo C y los contenedores.",
+      "thumbnail": "thumbnails/gt_pdf.png",
+      "ui_config": null
+    }
+  ]
+}
